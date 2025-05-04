@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -18,6 +19,10 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				medieval: ['MedievalSharp', 'cursive'],
+				fantasy: ['Fondamento', 'cursive'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -61,7 +66,16 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				parchment: '#f5e9d0',
+				gold: '#d4af37',
+				'deep-purple': '#4a154b',
+				'royal-blue': '#1e3a8a',
+				'emerald-green': '#046307',
+				'dragon-red': '#b91c1c',
+			},
+			backgroundImage: {
+				'parchment-texture': "url('/parchment.png')",
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +98,18 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'dice-roll': {
+					'0%, 100%': { transform: 'rotate(0deg)' },
+					'25%': { transform: 'rotate(-15deg) scale(1.2)' },
+					'50%': { transform: 'rotate(10deg) scale(0.8)' },
+					'75%': { transform: 'rotate(-5deg) scale(1.1)' },
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'dice-roll': 'dice-roll 0.5s ease-in-out'
 			}
 		}
 	},
