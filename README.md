@@ -1,73 +1,49 @@
-# Welcome to your Lovable project
 
-## Project info
+# 🎲 Dados del Aventurero Guild
 
-**URL**: https://lovable.dev/projects/d36d72c2-3152-4d91-9d4d-8cb6761ab4c7
+Un lanzador de dados virtual con tema medieval para juegos de rol y juegos de mesa.
 
-## How can I edit this code?
+## 📱 Vista Previa
 
-There are several ways of editing your application.
+La aplicación está optimizada para funcionar en cualquier dispositivo, desde móviles hasta tablets y ordenadores de escritorio.
 
-**Use Lovable**
+## ✨ Características
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/d36d72c2-3152-4d91-9d4d-8cb6761ab4c7) and start prompting.
+- 🎲 Lanza diferentes tipos de dados (d4, d6, d8, d10, d12, d20, d100)
+- 🔢 Ajusta la cantidad de dados (hasta 10)
+- ➕ Añade modificadores a tus tiradas
+- 👑 Opción para tirar con ventaja o desventaja
+- 📜 Historial de tiradas con opción para repetirlas
+- 👤 Personaliza tu nombre de jugador
+- 💾 Guardado automático de configuraciones y historial
+- 🌙 Compatibilidad con modo claro y oscuro
+- 📱 Diseño completamente responsive
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🚀 Tecnologías Utilizadas
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
 - React
-- shadcn-ui
+- TypeScript
 - Tailwind CSS
+- Framer Motion
+- Shadcn UI
+- LocalStorage para persistencia de datos
 
-## How can I deploy this project?
+## 🛠️ Cómo Usar
 
-Simply open [Lovable](https://lovable.dev/projects/d36d72c2-3152-4d91-9d4d-8cb6761ab4c7) and click on Share -> Publish.
+1. Selecciona el tipo de dado que deseas lanzar
+2. Ajusta la cantidad de dados
+3. Modifica el valor adicional si es necesario
+4. Selecciona ventaja/desventaja si lo deseas
+5. Introduce tu nombre de personaje
+6. ¡Presiona el botón para lanzar los dados!
 
-## Can I connect a custom domain to my Lovable project?
+## 🎮 Uso Avanzado
 
-Yes, you can!
+- **Ventaja**: Lanza dos dados y toma el valor más alto
+- **Desventaja**: Lanza dos dados y toma el valor más bajo
+- **Modificadores**: Suma o resta valores a tus tiradas
+- **Historial**: Revisa y repite tiradas anteriores
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📝 Licencia
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Este proyecto está licenciado bajo la Licencia MIT.
