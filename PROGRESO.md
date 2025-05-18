@@ -1,7 +1,7 @@
 
 # 📊 Progreso del Proyecto - Dados del Aventurero Guild
 
-## 🚀 Versión Actual: 1.0.0
+## 🚀 Versión Actual: 2.0.0
 
 ### ✅ Funcionalidades Implementadas
 
@@ -17,23 +17,36 @@
 - [x] Animaciones para las tiradas
 - [x] Notificaciones para críticos (20) y fallos críticos (1)
 - [x] Diseño responsivo para múltiples dispositivos
+- [x] Sistema de creación y gestión de personajes
+- [x] Interfaz de narrador/master
+- [x] Conectividad Bluetooth entre jugadores
+- [x] Gestión de enemigos en tiempo real
+- [x] Sincronización de tiradas entre todos los jugadores
 
 ### 📋 Próximas Funcionalidades
 
-- [ ] Modo multijugador local
-- [ ] Guardar conjuntos de tiradas específicas
-- [ ] Exportar/importar datos de tiradas
-- [ ] Tablas de resultados personalizadas
-- [ ] Temas adicionales (fantástico, futurista, etc.)
-- [ ] Sonidos personalizables
-- [ ] Estadísticas avanzadas de tiradas
-- [ ] Modo narrador para gestión de partidas
-- [ ] Integración con sistemas de juego populares
-- [ ] Modo offline completo
+- [ ] Sistema de campañas y aventuras predefinidas
+- [ ] Integración de mapas interactivos
+- [ ] Guardado en la nube de personajes y campañas
+- [ ] Soporte para reglas de otros sistemas de juegos
+- [ ] Efectos visuales mejorados para críticos y fallos
+- [ ] Modo offline con IA para NPCs
+- [ ] Expansión de reglas especiales de combate
+- [ ] Creador de fichas de personaje personalizables
+- [ ] Compartir tiradas en redes sociales
+- [ ] Soporte para audio y efectos de sonido temáticos
 
 ## 📝 Registro de Cambios
 
-### Versión 1.0.0 (Actual)
+### Versión 2.0.0 (Actual)
+- Implementación del sistema de conectividad Bluetooth
+- Creación del módulo de gestión de personajes
+- Desarrollo de la interfaz de Narrador/Master
+- Sistema de creación y gestión de enemigos
+- Sincronización en tiempo real entre dispositivos
+- Optimización para diferentes tamaños de pantalla
+
+### Versión 1.0.0
 - Lanzamiento inicial con funcionalidades básicas
 - Implementación del sistema de dados completo
 - Diseño responsivo para todos los dispositivos
@@ -51,9 +64,10 @@
 
 ## 🔧 Problemas Conocidos
 
+- El alcance Bluetooth puede variar según el dispositivo
+- Posible latencia en partidas con muchos jugadores conectados
+- Compatibilidad limitada con navegadores que no soportan Web Bluetooth API
 - Optimización adicional necesaria para dispositivos de gama baja
-- Posibles mejoras en la generación de números aleatorios
-- Refinamiento de animaciones en ciertos navegadores
 
 ## 🤝 Contribuciones
 
