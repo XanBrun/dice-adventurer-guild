@@ -6,10 +6,11 @@ import {
   Bluetooth, 
   BluetoothConnected, 
   BluetoothOff,
+  BluetoothSearching,
   UserRound,
   Server
 } from "lucide-react";
-import { bluetoothManager, BluetoothRole } from '@/lib/bluetooth-utils';
+import { bluetoothManager, BluetoothRole, BluetoothDevice } from '@/lib/bluetooth-utils';
 import { useToast } from "@/components/ui/use-toast";
 
 interface BluetoothStatusProps {
@@ -19,8 +20,9 @@ interface BluetoothStatusProps {
 const BluetoothStatus: React.FC<BluetoothStatusProps> = ({ onRoleChange }) => {
   const [isAvailable, setIsAvailable] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
   const [role, setRole] = useState<BluetoothRole>('none');
-  const [connectedDevices, setConnectedDevices] = useState<number>(0);
+  const [connectedDevices, setConnectedDevices] = useState<BluetoothDevice[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -28,18 +30,21 @@ const BluetoothStatus: React.FC<BluetoothStatusProps> = ({ onRoleChange }) => {
     setIsAvailable(bluetoothManager.isAvailable);
     setIsConnected(bluetoothManager.isConnected);
     setRole(bluetoothManager.role);
-    setConnectedDevices(bluetoothManager.connectedDevices.length);
+    setConnectedDevices(bluetoothManager.connectedDevices);
 
     // Configurar callbacks
-    bluetoothManager.setOnConnectionChangeCallback((connected) => {
+    bluetoothManager.setOnConnectionChangeCallback((connected, updatedDevices) => {
       setIsConnected(connected);
       setRole(bluetoothManager.role);
-      setConnectedDevices(bluetoothManager.connectedDevices.length);
+      setConnectedDevices(updatedDevices || []);
+      setIsSearching(false);
       
       if (connected) {
         toast({
           title: "Bluetooth conectado",
-          description: role === 'narrator' ? "Modo narrador activado" : "Conectado a la partida",
+          description: role === 'narrator' 
+            ? `Modo narrador activado. ${updatedDevices?.length || 0} jugador(es) conectado(s).` 
+            : "Conectado a la partida",
         });
       } else {
         toast({
@@ -53,16 +58,22 @@ const BluetoothStatus: React.FC<BluetoothStatusProps> = ({ onRoleChange }) => {
         onRoleChange(bluetoothManager.role);
       }
     });
+
+    bluetoothManager.setOnSearchingCallback((searching) => {
+      setIsSearching(searching);
+    });
     
     return () => {
       // Limpiar callbacks
       bluetoothManager.setOnConnectionChangeCallback(null);
       bluetoothManager.setOnMessageCallback(null);
+      bluetoothManager.setOnSearchingCallback(null);
     };
   }, [onRoleChange, toast, role]);
 
   const handleConnectNarrator = async () => {
     try {
+      setIsSearching(true);
       const success = await bluetoothManager.startAsNarrator();
       if (success) {
         toast({
@@ -70,6 +81,7 @@ const BluetoothStatus: React.FC<BluetoothStatusProps> = ({ onRoleChange }) => {
           description: "Esperando a que los jugadores se conecten",
         });
       } else {
+        setIsSearching(false);
         toast({
           title: "Error",
           description: "No se pudo iniciar el modo narrador",
@@ -77,6 +89,7 @@ const BluetoothStatus: React.FC<BluetoothStatusProps> = ({ onRoleChange }) => {
         });
       }
     } catch (error) {
+      setIsSearching(false);
       console.error("Error al conectar como narrador:", error);
       toast({
         title: "Error",
@@ -88,8 +101,10 @@ const BluetoothStatus: React.FC<BluetoothStatusProps> = ({ onRoleChange }) => {
 
   const handleConnectPlayer = async () => {
     try {
+      setIsSearching(true);
       const success = await bluetoothManager.connectAsPlayer();
       if (!success) {
+        setIsSearching(false);
         toast({
           title: "Error",
           description: "No se pudo conectar a la partida",
@@ -97,6 +112,7 @@ const BluetoothStatus: React.FC<BluetoothStatusProps> = ({ onRoleChange }) => {
         });
       }
     } catch (error) {
+      setIsSearching(false);
       console.error("Error al conectar como jugador:", error);
       toast({
         title: "Error",
@@ -123,6 +139,15 @@ const BluetoothStatus: React.FC<BluetoothStatusProps> = ({ onRoleChange }) => {
     );
   }
 
+  if (isSearching) {
+    return (
+      <div className="flex items-center gap-2 bg-amber-100 dark:bg-amber-900/20 p-2 rounded-md animate-pulse">
+        <BluetoothSearching className="h-5 w-5 text-amber-500" />
+        <span className="text-sm">{role === 'player' ? 'Buscando narrador...' : 'Activando modo narrador...'}</span>
+      </div>
+    );
+  }
+
   if (isConnected) {
     return (
       <div className="flex items-center gap-2 bg-emerald-100 dark:bg-emerald-900/20 p-2 rounded-md">
@@ -135,10 +160,15 @@ const BluetoothStatus: React.FC<BluetoothStatusProps> = ({ onRoleChange }) => {
             {role === 'narrator' && (
               <Badge variant="outline" className="ml-1">
                 <Server className="h-3 w-3 mr-1" />
-                {connectedDevices} jugadores
+                {connectedDevices.length} jugadores
               </Badge>
             )}
           </div>
+          {connectedDevices.length > 0 && role === 'narrator' && (
+            <div className="text-xs my-1 text-muted-foreground">
+              {connectedDevices.map(device => device.name).join(', ')}
+            </div>
+          )}
           <Button 
             variant="ghost" 
             size="sm" 
