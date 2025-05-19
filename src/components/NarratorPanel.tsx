@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { Enemy, ENEMY_TYPES, createDefaultEnemy, calculateModifier } from "@/lib
 import { bluetoothManager, BluetoothMessage } from "@/lib/bluetooth-utils";
 import { Slider } from "@/components/ui/slider";
 import { motion } from "framer-motion";
+import { Trash2Icon } from "lucide-react";
 
 interface InitiativeEntry {
   id: string;

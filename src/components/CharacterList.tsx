@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Character, loadCharacters, deleteCharacter } from "@/lib/character-utils";
-import { Trash2Icon, PencilIcon, DiceIcon } from "lucide-react";
+import { Trash2Icon, PencilIcon, Dice1Icon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import CharacterCreation from "./CharacterCreation";
@@ -161,7 +160,7 @@ const CharacterList: React.FC<CharacterListProps> = ({ onSelectCharacter }) => {
                         className="bg-accent text-black hover:bg-accent/90"
                         onClick={() => handleSelect(character)}
                       >
-                        <DiceIcon className="h-4 w-4 mr-1" />
+                        <Dice1Icon className="h-4 w-4 mr-1" />
                         Usar
                       </Button>
                       <Button
