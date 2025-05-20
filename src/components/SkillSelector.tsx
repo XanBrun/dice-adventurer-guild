@@ -8,6 +8,7 @@ import {
   calculateSkillValue,
   Character
 } from '@/lib/character-utils';
+import { cn } from "@/lib/utils";
 
 interface SkillSelectorProps {
   character: Character;
@@ -61,7 +62,10 @@ const SkillSelector: React.FC<SkillSelectorProps> = ({
                     <span>
                       {SKILL_NAMES_SPANISH[skillName as keyof typeof SKILL_NAMES_SPANISH]}
                     </span>
-                    <span className={isChecked ? "font-bold text-primary" : ""}>
+                    <span className={cn(
+                      isChecked ? "font-bold text-primary" : "",
+                      "transition-all duration-200"
+                    )}>
                       {modifier}
                     </span>
                   </label>

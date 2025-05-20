@@ -1,7 +1,7 @@
 
 # 📊 Progreso del Proyecto - Dados del Aventurero Guild
 
-## 🚀 Versión Actual: 2.0.0
+## 🚀 Versión Actual: 2.1.0
 
 ### ✅ Funcionalidades Implementadas
 
@@ -22,6 +22,7 @@
 - [x] Conectividad Bluetooth entre jugadores
 - [x] Gestión de enemigos en tiempo real
 - [x] Sincronización de tiradas entre todos los jugadores
+- [x] Efectos visuales mejorados para críticos y fallos
 
 ### 📋 Próximas Funcionalidades
 
@@ -29,7 +30,6 @@
 - [ ] Integración de mapas interactivos
 - [ ] Guardado en la nube de personajes y campañas
 - [ ] Soporte para reglas de otros sistemas de juegos
-- [ ] Efectos visuales mejorados para críticos y fallos
 - [ ] Modo offline con IA para NPCs
 - [ ] Expansión de reglas especiales de combate
 - [ ] Creador de fichas de personaje personalizables
@@ -38,7 +38,13 @@
 
 ## 📝 Registro de Cambios
 
-### Versión 2.0.0 (Actual)
+### Versión 2.1.0 (Actual)
+- Implementación de efectos visuales mejorados para críticos y pifias
+- Componente CriticalEffects para animaciones especiales
+- Mejora visual en el historial de tiradas
+- Actualización de la interfaz de usuario para destacar resultados críticos
+
+### Versión 2.0.0
 - Implementación del sistema de conectividad Bluetooth
 - Creación del módulo de gestión de personajes
 - Desarrollo de la interfaz de Narrador/Master
