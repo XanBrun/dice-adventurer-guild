@@ -1,8 +1,9 @@
 
 
+
 # 📊 Progreso del Proyecto - Dados del Aventurero Guild
 
-## 🚀 Versión Actual: 2.3.0
+## 🚀 Versión Actual: 2.4.0
 
 ### ✅ Funcionalidades Implementadas
 
@@ -27,10 +28,10 @@
 - [x] Soporte para audio y efectos de sonido temáticos
 - [x] Sistema de campañas y aventuras predefinidas
 - [x] Control de sonidos y efectos de audio para tiradas
+- [x] Integración de mapas interactivos
 
 ### 📋 Próximas Funcionalidades
 
-- [ ] Integración de mapas interactivos
 - [ ] Soporte para reglas de otros sistemas de juegos
 - [ ] Modo offline con IA para NPCs
 - [ ] Expansión de reglas especiales de combate
@@ -38,7 +39,15 @@
 
 ## 📝 Registro de Cambios
 
-### Versión 2.3.0 (Actual)
+### Versión 2.4.0 (Actual)
+- Implementación completa de mapas interactivos
+- Visualización de mapas para diferentes campañas
+- Sistema de marcadores en el mapa
+- Posibilidad de añadir y eliminar marcadores personalizados
+- Navegación y zoom en mapas interactivos
+- Persistencia de marcadores usando localStorage
+
+### Versión 2.3.0
 - Implementación completa del sistema de sonidos para dados
 - Adición de efectos de sonido para cada tipo de dado (d4, d6, d8, d10, d12, d20, d100)
 - Efectos de sonido especiales para críticos y pifias
@@ -99,4 +108,5 @@ El proyecto está abierto a contribuciones. Si deseas participar, por favor:
 3. Haz commit de tus cambios (`git commit -m 'Añadir nueva característica'`)
 4. Haz push a la rama (`git push origin feature/nueva-caracteristica`)
 5. Abre un Pull Request
+
 

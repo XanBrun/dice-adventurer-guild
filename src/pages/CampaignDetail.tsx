@@ -1,12 +1,11 @@
-
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Campaign, Adventure, getCampaignById } from "@/lib/campaign-utils";
-import { ArrowLeft, CheckCircle, Sword, Trophy, Target } from "lucide-react";
+import { ArrowLeft, CheckCircle, Sword, Trophy, Target, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -96,18 +95,29 @@ const CampaignDetail = () => {
             </div>
           </div>
           
+          <div className="flex justify-end mb-6">
+            <div className="flex gap-3">
+              <Button
+                onClick={() => playSound('d20')}
+                size="sm"
+                variant="outline"
+              >
+                <Sword className="h-4 w-4 mr-2" /> Iniciar campaña
+              </Button>
+              
+              <Button
+                onClick={() => navigate(`/campaigns/${campaign.id}/maps`)}
+                size="sm"
+                variant="default"
+              >
+                <MapPin className="h-4 w-4 mr-2" /> Ver mapas
+              </Button>
+            </div>
+          </div>
+          
           <Card className="border-2 border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="font-medieval">Aventuras</CardTitle>
-                <Button
-                  onClick={() => playSound('d20')}
-                  size="sm"
-                  variant="outline"
-                >
-                  <Sword className="h-4 w-4 mr-2" /> Iniciar campaña
-                </Button>
-              </div>
+              <CardTitle className="font-medieval">Aventuras</CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs 
