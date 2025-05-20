@@ -1,9 +1,7 @@
 
-
-
 # 📊 Progreso del Proyecto - Dados del Aventurero Guild
 
-## 🚀 Versión Actual: 2.4.0
+## 🚀 Versión Actual: 2.5.0
 
 ### ✅ Funcionalidades Implementadas
 
@@ -29,17 +27,27 @@
 - [x] Sistema de campañas y aventuras predefinidas
 - [x] Control de sonidos y efectos de audio para tiradas
 - [x] Integración de mapas interactivos
+- [x] Reglas expandidas de combate
+- [x] Sistema para compartir aplicación mediante QR
 
 ### 📋 Próximas Funcionalidades
 
 - [ ] Soporte para reglas de otros sistemas de juegos
 - [ ] Modo offline con IA para NPCs
-- [ ] Expansión de reglas especiales de combate
-- [ ] Creador de fichas de personaje personalizables
 
 ## 📝 Registro de Cambios
 
-### Versión 2.4.0 (Actual)
+### Versión 2.5.0 (Actual)
+- Implementación completa de reglas expandidas de combate
+- Sistema detallado de acciones de combate (estándar, adicionales, reacciones)
+- Referencia de condiciones y estados especiales
+- Reglas de cobertura y variantes de iniciativa
+- Variantes para críticos y fallos críticos
+- Sistema de generación de códigos QR para compartir la aplicación
+- Información sobre uso offline de la aplicación
+- Instrucciones para añadir la aplicación a la pantalla de inicio
+
+### Versión 2.4.0
 - Implementación completa de mapas interactivos
 - Visualización de mapas para diferentes campañas
 - Sistema de marcadores en el mapa
@@ -108,5 +116,3 @@ El proyecto está abierto a contribuciones. Si deseas participar, por favor:
 3. Haz commit de tus cambios (`git commit -m 'Añadir nueva característica'`)
 4. Haz push a la rama (`git push origin feature/nueva-caracteristica`)
 5. Abre un Pull Request
-
-

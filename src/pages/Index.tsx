@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,11 +11,13 @@ import DiceResult from "@/components/DiceResult";
 import CharacterList from "@/components/CharacterList";
 import NarratorPanel from "@/components/NarratorPanel";
 import BluetoothStatus from "@/components/BluetoothStatus";
+import CombatRules from "@/components/CombatRules";
+import QRCodeShare from "@/components/QRCodeShare";
 import { DiceType, DiceRoll, RollType, performDiceRoll } from "@/lib/dice-utils";
 import { Character } from "@/lib/character-utils";
 import { BluetoothRole, bluetoothManager } from "@/lib/bluetooth-utils";
 import { motion } from "framer-motion";
-import { MapIcon } from "lucide-react";
+import { MapIcon, Sword, QrCode } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useRollSounds } from "@/hooks/useRollSounds";
 
@@ -200,10 +203,12 @@ const Index = () => {
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="grid grid-cols-3 w-full mb-6">
+          <TabsList className="grid grid-cols-5 w-full mb-6">
             <TabsTrigger value="dice" className="font-medieval">Dados</TabsTrigger>
             <TabsTrigger value="characters" className="font-medieval">Personajes</TabsTrigger>
             <TabsTrigger value="narrator" className="font-medieval">Narrador</TabsTrigger>
+            <TabsTrigger value="combat" className="font-medieval">Combate</TabsTrigger>
+            <TabsTrigger value="share" className="font-medieval">Compartir</TabsTrigger>
           </TabsList>
           
           <TabsContent value="dice">
@@ -283,6 +288,45 @@ const Index = () => {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+          
+          <TabsContent value="combat">
+            <CombatRules />
+          </TabsContent>
+          
+          <TabsContent value="share">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <QRCodeShare />
+              
+              <Card className="border-2 border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="font-medieval flex items-center gap-2">
+                    <Sword className="h-5 w-5" />
+                    Aplicación Offline
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <p>Esta aplicación funciona completamente offline. Una vez cargada, puedes:</p>
+                    
+                    <ul className="list-disc list-inside space-y-2">
+                      <li>Usar la aplicación sin conexión a internet</li>
+                      <li>Añadirla a tu pantalla de inicio en Android/iOS para acceso rápido</li>
+                      <li>Todos los datos se guardan localmente en tu dispositivo</li>
+                      <li>Compartir el enlace o código QR con otros jugadores</li>
+                    </ul>
+                    
+                    <div className="bg-accent/20 p-4 rounded-md mt-4">
+                      <h4 className="font-medieval mb-2">Para añadir a la pantalla de inicio:</h4>
+                      <p className="text-sm">
+                        En Chrome para Android: Menu → Añadir a la pantalla de inicio<br />
+                        En Safari para iOS: Compartir → Añadir a la pantalla de inicio
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
