@@ -1,7 +1,8 @@
 
+
 # 📊 Progreso del Proyecto - Dados del Aventurero Guild
 
-## 🚀 Versión Actual: 2.2.0
+## 🚀 Versión Actual: 2.3.0
 
 ### ✅ Funcionalidades Implementadas
 
@@ -25,20 +26,27 @@
 - [x] Efectos visuales mejorados para críticos y fallos
 - [x] Soporte para audio y efectos de sonido temáticos
 - [x] Sistema de campañas y aventuras predefinidas
+- [x] Control de sonidos y efectos de audio para tiradas
 
 ### 📋 Próximas Funcionalidades
 
 - [ ] Integración de mapas interactivos
-- [ ] Guardado en la nube de personajes y campañas
 - [ ] Soporte para reglas de otros sistemas de juegos
 - [ ] Modo offline con IA para NPCs
 - [ ] Expansión de reglas especiales de combate
 - [ ] Creador de fichas de personaje personalizables
-- [ ] Compartir tiradas en redes sociales
 
 ## 📝 Registro de Cambios
 
-### Versión 2.2.0 (Actual)
+### Versión 2.3.0 (Actual)
+- Implementación completa del sistema de sonidos para dados
+- Adición de efectos de sonido para cada tipo de dado (d4, d6, d8, d10, d12, d20, d100)
+- Efectos de sonido especiales para críticos y pifias
+- Control para activar/desactivar sonidos
+- Botón para reproducir sonidos de tiradas pasadas
+- Persistencia de la preferencia de sonido usando localStorage
+
+### Versión 2.2.0
 - Implementación de sistema de efectos de sonido para dados
 - Control de sonido en la interfaz de usuario
 - Creación del sistema de campañas y aventuras predefinidas
@@ -81,7 +89,6 @@
 - Posible latencia en partidas con muchos jugadores conectados
 - Compatibilidad limitada con navegadores que no soportan Web Bluetooth API
 - Optimización adicional necesaria para dispositivos de gama baja
-- Las imágenes de campañas necesitan ser agregadas a la carpeta public/campaigns
 
 ## 🤝 Contribuciones
 
@@ -92,3 +99,4 @@ El proyecto está abierto a contribuciones. Si deseas participar, por favor:
 3. Haz commit de tus cambios (`git commit -m 'Añadir nueva característica'`)
 4. Haz push a la rama (`git push origin feature/nueva-caracteristica`)
 5. Abre un Pull Request
+

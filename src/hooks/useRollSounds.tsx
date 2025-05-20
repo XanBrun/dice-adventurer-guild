@@ -1,103 +1,101 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { DiceRoll } from '@/lib/dice-utils';
 
-type SoundType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100' | 'critical' | 'fail';
+type SoundState = {
+  isSoundEnabled: boolean;
+  playingSoundId: string | null;
+};
 
 export const useRollSounds = () => {
-  const [isSoundEnabled, setIsSoundEnabled] = useState<boolean>(false);
-  const [sounds, setSounds] = useState<Record<SoundType, HTMLAudioElement | null>>({
-    'd4': null,
-    'd6': null,
-    'd8': null,
-    'd10': null,
-    'd12': null,
-    'd20': null,
-    'd100': null,
-    'critical': null,
-    'fail': null
+  // Estado para controlar si el sonido está activado
+  const [soundState, setSoundState] = useState<SoundState>({
+    isSoundEnabled: true,
+    playingSoundId: null
   });
 
-  // Inicializar los sonidos
+  // Efecto para cargar la preferencia de sonido desde localStorage
   useEffect(() => {
-    // Comprobar si localStorage ya tiene una preferencia de sonido
-    const savedPreference = localStorage.getItem('sound-enabled');
-    if (savedPreference !== null) {
-      setIsSoundEnabled(savedPreference === 'true');
+    try {
+      const savedSoundPreference = localStorage.getItem('diceRollSoundEnabled');
+      if (savedSoundPreference !== null) {
+        setSoundState(prev => ({
+          ...prev,
+          isSoundEnabled: savedSoundPreference === 'true'
+        }));
+      }
+    } catch (error) {
+      console.error("Error loading sound preference:", error);
     }
-
-    // Cargar todos los sonidos
-    const newSounds: Record<SoundType, HTMLAudioElement> = {
-      'd4': new Audio('/sounds/d4.mp3'),
-      'd6': new Audio('/sounds/d6.mp3'),
-      'd8': new Audio('/sounds/d8.mp3'),
-      'd10': new Audio('/sounds/d10.mp3'),
-      'd12': new Audio('/sounds/d12.mp3'),
-      'd20': new Audio('/sounds/d20.mp3'),
-      'd100': new Audio('/sounds/d100.mp3'),
-      'critical': new Audio('/sounds/critical.mp3'),
-      'fail': new Audio('/sounds/fail.mp3'),
-    };
-
-    // Configurar el volumen para cada sonido
-    Object.values(newSounds).forEach(sound => {
-      if (sound) sound.volume = 0.5;
-    });
-
-    setSounds(newSounds);
-
-    // Limpiar los sonidos cuando el componente se desmonte
-    return () => {
-      Object.values(newSounds).forEach(sound => {
-        if (sound) {
-          sound.pause();
-          sound.currentTime = 0;
-        }
-      });
-    };
   }, []);
 
-  // Guardar la preferencia de sonido cuando cambie
-  useEffect(() => {
-    localStorage.setItem('sound-enabled', isSoundEnabled.toString());
-  }, [isSoundEnabled]);
+  // Función para alternar el estado del sonido
+  const toggleSound = useCallback(() => {
+    setSoundState(prev => {
+      const newState = {
+        ...prev,
+        isSoundEnabled: !prev.isSoundEnabled
+      };
+      
+      // Guardar preferencia en localStorage
+      try {
+        localStorage.setItem('diceRollSoundEnabled', String(newState.isSoundEnabled));
+      } catch (error) {
+        console.error("Error saving sound preference:", error);
+      }
+      
+      return newState;
+    });
+  }, []);
 
-  const toggleSound = () => {
-    setIsSoundEnabled(!isSoundEnabled);
-  };
-
-  const playSound = (soundType: SoundType) => {
-    if (!isSoundEnabled) return;
+  // Función para reproducir el sonido de una tirada
+  const playSoundForRoll = useCallback((roll: DiceRoll) => {
+    if (!soundState.isSoundEnabled) return;
     
-    const sound = sounds[soundType];
-    if (sound) {
-      sound.currentTime = 0;
-      sound.play().catch(error => {
+    try {
+      // Determinar qué sonido reproducir
+      let soundPath = `/sounds/${roll.diceType}.mp3`;
+      
+      // Reproducir sonidos especiales para críticos y pifias (d20)
+      if (roll.diceType === 'd20' && roll.count === 1) {
+        if (roll.results[0] === 20) {
+          soundPath = '/sounds/critical.mp3';
+        } else if (roll.results[0] === 1) {
+          soundPath = '/sounds/fail.mp3';
+        }
+      }
+      
+      // Crear y reproducir el audio
+      const audio = new Audio(soundPath);
+      audio.volume = 0.7; // Volumen al 70%
+      
+      // ID único para esta reproducción
+      const soundId = `sound-${Date.now()}`;
+      setSoundState(prev => ({ ...prev, playingSoundId: soundId }));
+      
+      // Reproducir el sonido
+      audio.play().catch(error => {
         console.error("Error playing sound:", error);
       });
+      
+      // Limpiar el ID cuando el sonido termine
+      audio.onended = () => {
+        setSoundState(prev => {
+          if (prev.playingSoundId === soundId) {
+            return { ...prev, playingSoundId: null };
+          }
+          return prev;
+        });
+      };
+    } catch (error) {
+      console.error("Error playing dice roll sound:", error);
     }
+  }, [soundState.isSoundEnabled]);
+
+  return {
+    isSoundEnabled: soundState.isSoundEnabled,
+    isPlaying: soundState.playingSoundId !== null,
+    playSoundForRoll,
+    toggleSound
   };
-
-  const playSoundForRoll = (roll: DiceRoll) => {
-    if (!isSoundEnabled) return;
-
-    // Determinar qué sonido reproducir
-    const diceType = roll.diceType as SoundType;
-    
-    // Comprobar si es un crítico o una pifia con d20
-    if (roll.diceType === 'd20' && roll.count === 1) {
-      if (roll.results[0] === 20) {
-        playSound('critical');
-        return;
-      } else if (roll.results[0] === 1) {
-        playSound('fail');
-        return;
-      }
-    }
-    
-    // De lo contrario, reproducir el sonido normal del dado
-    playSound(diceType);
-  };
-
-  return { isSoundEnabled, toggleSound, playSound, playSoundForRoll };
 };
