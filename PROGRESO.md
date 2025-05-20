@@ -1,7 +1,7 @@
 
 # 📊 Progreso del Proyecto - Dados del Aventurero Guild
 
-## 🚀 Versión Actual: 2.1.0
+## 🚀 Versión Actual: 2.2.0
 
 ### ✅ Funcionalidades Implementadas
 
@@ -23,10 +23,11 @@
 - [x] Gestión de enemigos en tiempo real
 - [x] Sincronización de tiradas entre todos los jugadores
 - [x] Efectos visuales mejorados para críticos y fallos
+- [x] Soporte para audio y efectos de sonido temáticos
+- [x] Sistema de campañas y aventuras predefinidas
 
 ### 📋 Próximas Funcionalidades
 
-- [ ] Sistema de campañas y aventuras predefinidas
 - [ ] Integración de mapas interactivos
 - [ ] Guardado en la nube de personajes y campañas
 - [ ] Soporte para reglas de otros sistemas de juegos
@@ -34,11 +35,17 @@
 - [ ] Expansión de reglas especiales de combate
 - [ ] Creador de fichas de personaje personalizables
 - [ ] Compartir tiradas en redes sociales
-- [ ] Soporte para audio y efectos de sonido temáticos
 
 ## 📝 Registro de Cambios
 
-### Versión 2.1.0 (Actual)
+### Versión 2.2.0 (Actual)
+- Implementación de sistema de efectos de sonido para dados
+- Control de sonido en la interfaz de usuario
+- Creación del sistema de campañas y aventuras predefinidas
+- Nuevas páginas para explorar y ver detalles de campañas
+- Integración de encuentros, objetivos y recompensas para aventuras
+
+### Versión 2.1.0
 - Implementación de efectos visuales mejorados para críticos y pifias
 - Componente CriticalEffects para animaciones especiales
 - Mejora visual en el historial de tiradas
@@ -74,6 +81,7 @@
 - Posible latencia en partidas con muchos jugadores conectados
 - Compatibilidad limitada con navegadores que no soportan Web Bluetooth API
 - Optimización adicional necesaria para dispositivos de gama baja
+- Las imágenes de campañas necesitan ser agregadas a la carpeta public/campaigns
 
 ## 🤝 Contribuciones
 

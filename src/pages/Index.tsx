@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import DiceSelector from "@/components/DiceSelector";
 import DiceControls from "@/components/DiceControls";
 import RollHistory from "@/components/RollHistory";
@@ -14,8 +14,12 @@ import { DiceType, DiceRoll, RollType, performDiceRoll } from "@/lib/dice-utils"
 import { Character } from "@/lib/character-utils";
 import { BluetoothRole, bluetoothManager } from "@/lib/bluetooth-utils";
 import { motion } from "framer-motion";
+import { MapIcon } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useRollSounds } from "@/hooks/useRollSounds";
 
 const Index = () => {
+  const { playSoundForRoll } = useRollSounds();
   const [selectedDice, setSelectedDice] = useState<DiceType>("d20");
   const [diceCount, setDiceCount] = useState(1);
   const [modifier, setModifier] = useState(0);
@@ -77,10 +81,18 @@ const Index = () => {
     try {
       setIsRolling(true);
       
-      // Reproducir efecto de sonido
-      const audio = new Audio('/dice-roll.mp3');
-      audio.volume = 0.6;
-      audio.play().catch(e => console.log("Audio play failed:", e));
+      // Reproducir efecto de sonido usando nuestro nuevo hook
+      playSoundForRoll({
+        id: 'temp-roll',
+        diceType: selectedDice,
+        count: diceCount,
+        modifier: modifier,
+        rollType: rollType,
+        results: [],
+        total: 0,
+        timestamp: new Date(),
+        playerName: playerName
+      });
 
       setTimeout(() => {
         // Calcular modificador según el personaje seleccionado si es necesario
@@ -89,7 +101,6 @@ const Index = () => {
         // Si tenemos un personaje seleccionado, podríamos ajustar el modificador
         if (selectedCharacter && selectedDice === "d20") {
           // Ejemplo: añadir el modificador de habilidad según el contexto
-          // finalModifier += selectedCharacter.modifiers.strength;
         }
 
         const roll = performDiceRoll(
@@ -173,7 +184,15 @@ const Index = () => {
           <h1 className="text-4xl md:text-5xl font-medieval text-center md:text-left text-primary">
             Dados del Aventurero Guild
           </h1>
-          <BluetoothStatus onRoleChange={handleBluetoothRoleChange} />
+          <div className="flex items-center gap-2">
+            <Link to="/campaigns">
+              <Button variant="outline" className="flex items-center gap-2">
+                <MapIcon className="h-4 w-4" />
+                <span className="font-medieval">Campañas</span>
+              </Button>
+            </Link>
+            <BluetoothStatus onRoleChange={handleBluetoothRoleChange} />
+          </div>
         </motion.div>
 
         <Tabs 

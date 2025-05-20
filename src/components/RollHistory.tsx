@@ -3,8 +3,10 @@ import React from "react";
 import { DiceRoll, formatRollResult } from "@/lib/dice-utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2Icon } from "lucide-react";
+import { Trash2Icon, VolumeIcon, Volume2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRollSounds } from "@/hooks/useRollSounds";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface RollHistoryProps {
   rolls: DiceRoll[];
@@ -17,20 +19,46 @@ const RollHistory: React.FC<RollHistoryProps> = ({
   onReroll,
   onClearHistory,
 }) => {
+  const { playSoundForRoll, isSoundEnabled, toggleSound } = useRollSounds();
+  
   return (
     <div className="mt-4 space-y-2">
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-medieval">Historial</h3>
-        {rolls.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClearHistory}
-            className="text-red-500 hover:text-red-700"
-          >
-            <Trash2Icon className="h-4 w-4 mr-2" /> Limpiar
-          </Button>
-        )}
+        <div className="flex space-x-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleSound}
+                  className="text-primary hover:text-primary/80"
+                >
+                  {isSoundEnabled ? (
+                    <Volume2Icon className="h-4 w-4" />
+                  ) : (
+                    <VolumeIcon className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isSoundEnabled ? "Desactivar sonidos" : "Activar sonidos"}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {rolls.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClearHistory}
+              className="text-red-500 hover:text-red-700"
+            >
+              <Trash2Icon className="h-4 w-4 mr-2" /> Limpiar
+            </Button>
+          )}
+        </div>
       </div>
       
       <div className="border rounded-md overflow-hidden bg-white/70 dark:bg-black/20 backdrop-blur-sm">
@@ -61,14 +89,23 @@ const RollHistory: React.FC<RollHistoryProps> = ({
                     )}>
                       {formatRollResult(roll)}
                     </span>
-                    <Button
-                      onClick={() => onReroll(roll)}
-                      variant="outline"
-                      size="sm"
-                      className="ml-2"
-                    >
-                      Repetir
-                    </Button>
+                    <div className="flex space-x-1">
+                      <Button
+                        onClick={() => playSoundForRoll(roll)}
+                        variant="ghost"
+                        size="sm"
+                        className="p-1 h-8 w-8"
+                      >
+                        <Volume2Icon className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => onReroll(roll)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Repetir
+                      </Button>
+                    </div>
                   </li>
                 );
               })}
