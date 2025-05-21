@@ -166,8 +166,8 @@ export const rollInitiative = (combatant: Character | Enemy): number => {
   
   if ('class' in combatant) {
     // It's a player character
-    // Since Character no longer has attributes directly, use a default value for now
-    modifier = 0; // Default for now, could be improved later
+    // Use a default value for now
+    modifier = 0; 
   } else {
     // It's an enemy
     modifier = combatant.stats.initiative;

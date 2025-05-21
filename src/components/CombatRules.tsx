@@ -115,13 +115,6 @@ const CombatRules: React.FC = () => {
                       </AccordionTrigger>
                       <AccordionContent>
                         <p className="text-muted-foreground mb-2">{condition.description}</p>
-                        <ul className="list-disc list-inside space-y-1">
-                          {condition.effects.map((effect, effectIndex) => (
-                            <li key={`effect-${index}-${effectIndex}`} className="text-sm">
-                              {effect}
-                            </li>
-                          ))}
-                        </ul>
                       </AccordionContent>
                     </AccordionItem>
                   ))}
@@ -133,10 +126,10 @@ const CombatRules: React.FC = () => {
           <TabsContent value="cover">
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-4">
-                {Object.entries(COVER_RULES).map(([title, description], index) => (
+                {COVER_RULES.map((rule, index) => (
                   <div key={`cover-${index}`} className="border rounded-lg p-4">
-                    <h3 className="font-medieval text-lg mb-2">{title}</h3>
-                    <p className="text-muted-foreground">{description}</p>
+                    <h3 className="font-medieval text-lg mb-2">{rule.name}</h3>
+                    <p className="text-muted-foreground">{rule.description}</p>
                   </div>
                 ))}
 
@@ -145,10 +138,10 @@ const CombatRules: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-medieval mb-2">Variantes de Iniciativa</h3>
                   <div className="grid gap-4">
-                    {Object.entries(INITIATIVE_VARIANTS).map(([title, description], index) => (
+                    {INITIATIVE_VARIANTS.map((variant, index) => (
                       <div key={`initiative-${index}`} className="border rounded-lg p-4">
-                        <h4 className="font-medieval mb-1">{title}</h4>
-                        <p className="text-muted-foreground text-sm">{description}</p>
+                        <h4 className="font-medieval mb-1">{variant.name}</h4>
+                        <p className="text-muted-foreground text-sm">{variant.description}</p>
                       </div>
                     ))}
                   </div>
@@ -160,12 +153,10 @@ const CombatRules: React.FC = () => {
           <TabsContent value="critical">
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-4">
-                {Object.entries(CRITICAL_HIT_RULES).map(([title, description], index) => (
-                  <div key={`critical-${index}`} className="border rounded-lg p-4">
-                    <h3 className="font-medieval text-lg mb-2">{title}</h3>
-                    <p className="text-muted-foreground">{description}</p>
-                  </div>
-                ))}
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-medieval text-lg mb-2">Golpe Crítico</h3>
+                  <p className="text-muted-foreground">{CRITICAL_HIT_RULES.description}</p>
+                </div>
               </div>
             </ScrollArea>
           </TabsContent>

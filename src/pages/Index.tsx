@@ -25,7 +25,8 @@ import {
   DiceCombination,
   formatRollResult,
   formatCombinedRollResult,
-  rollCombinedDice
+  rollCombinedDice,
+  HistoryRollType
 } from "@/lib/dice-utils";
 import { Character } from "@/lib/character-utils";
 import { BluetoothRole, bluetoothManager } from "@/lib/bluetooth-utils";
@@ -34,7 +35,8 @@ import { MapIcon, Sword, Dices as DicesIcon, MinusIcon, PlusIcon } from "lucide-
 import { Link } from "react-router-dom";
 import { useRollSounds } from "@/hooks/useRollSounds";
 
-function Index() {
+// Changed from export default function to const IndexPage for clearer renaming
+const IndexPage: React.FC = () => {
   const { playSoundForRoll, playSound } = useRollSounds();
   const [selectedDice, setSelectedDice] = useState<DiceType>("d20");
   const [diceCount, setDiceCount] = useState(1);
@@ -170,7 +172,7 @@ function Index() {
   ) => {
     const roll = rollCombinedDice(diceCombination, modifier, selectedCharacter?.name || "Jugador");
     
-    // Properly cast the roll type to match the history item type
+    // Fixed: Use the roll directly without creating a RollHistoryItem
     setRollHistory(prev => [roll, ...prev]);
     
     // Play a sound based on one of the dice used, defaulting to d20 if no dice
@@ -511,6 +513,7 @@ function Index() {
       </div>
     </div>
   );
-}
+};
 
-export default Index;
+// Export the component with a named export to avoid duplicate default exports
+export default IndexPage;

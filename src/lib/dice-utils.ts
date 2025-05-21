@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 
 export type DiceType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100';
@@ -56,6 +55,36 @@ export interface DiceRoll {
   total: number;
   timestamp: Date;
   playerName: string;
+}
+
+// Update HistoryRollType to include COMBINED_ROLL
+export type HistoryRollType = "ROLL" | "COMBINED_ROLL" | "CHARACTER" | "ENEMY" | "CHAT" | "SYSTEM";
+
+export interface RollHistoryItem {
+  id: string;
+  characterName: string;
+  type: HistoryRollType;
+  roll: DiceRoll | CombinedDiceRoll;
+  timestamp: Date;
+}
+
+export interface DiceCombination {
+  diceType: DiceType;
+  count: number;
+}
+
+export interface CombinedDiceRoll {
+  id: string;
+  playerName: string;
+  dice: DiceCombination[];
+  results: {
+    diceType: DiceType;
+    values: number[];
+  }[];
+  modifier: number;
+  total: number;
+  rollType: RollType;
+  timestamp: Date;
 }
 
 export const performDiceRoll = (
@@ -149,35 +178,6 @@ export const rollDice = (
   }
   return rolls;
 };
-
-export type HistoryRollType = "ROLL" | "COMBINED_ROLL" | "CHARACTER" | "ENEMY" | "CHAT" | "SYSTEM";
-
-export interface RollHistoryItem {
-  id: string;
-  characterName: string;
-  type: HistoryRollType;
-  roll: DiceRoll | CombinedDiceRoll;
-  timestamp: Date;
-}
-
-export interface DiceCombination {
-  diceType: DiceType;
-  count: number;
-}
-
-export interface CombinedDiceRoll {
-  id: string;
-  playerName: string;
-  dice: DiceCombination[];
-  results: {
-    diceType: DiceType;
-    values: number[];
-  }[];
-  modifier: number;
-  total: number;
-  rollType: RollType;
-  timestamp: Date;
-}
 
 export const performCombinedDiceRoll = (
   diceCombinations: DiceCombination[],

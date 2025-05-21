@@ -175,7 +175,8 @@ const CombatTracker: React.FC<CombatTrackerProps> = ({ players, enemies = [] }) 
                           <div className="flex-1">
                             <div className="font-bold">{player.name}</div>
                             <div className="text-xs text-muted-foreground">
-                              Iniciativa: {Math.floor((player.attributes.dexterity - 10) / 2)}
+                              {/* Remove the reference to player.attributes.dexterity */}
+                              Iniciativa: +0
                             </div>
                           </div>
                           <Badge variant="outline">
