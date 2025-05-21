@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +24,8 @@ import {
   performCombinedDiceRoll,
   DiceCombination,
   formatRollResult,
-  formatCombinedRollResult
+  formatCombinedRollResult,
+  rollCombinedDice
 } from "@/lib/dice-utils";
 import { Character } from "@/lib/character-utils";
 import { BluetoothRole, bluetoothManager } from "@/lib/bluetooth-utils";
@@ -32,7 +34,7 @@ import { MapIcon, Sword, Dices as DicesIcon, MinusIcon, PlusIcon } from "lucide-
 import { Link } from "react-router-dom";
 import { useRollSounds } from "@/hooks/useRollSounds";
 
-export default function Index() {
+function Index() {
   const { playSoundForRoll, playSound } = useRollSounds();
   const [selectedDice, setSelectedDice] = useState<DiceType>("d20");
   const [diceCount, setDiceCount] = useState(1);
@@ -168,13 +170,8 @@ export default function Index() {
   ) => {
     const roll = rollCombinedDice(diceCombination, modifier, selectedCharacter?.name || "Jugador");
     
-    setRollHistory(prev => [{
-      id: roll.id,
-      characterName: roll.playerName,
-      type: "COMBINED_ROLL" as "ROLL", // Type assertion to satisfy the required type
-      roll: roll,
-      timestamp: new Date()
-    }, ...prev]);
+    // Properly cast the roll type to match the history item type
+    setRollHistory(prev => [roll, ...prev]);
     
     // Play a sound based on one of the dice used, defaulting to d20 if no dice
     if (diceCombination.length > 0) {
@@ -456,7 +453,7 @@ export default function Index() {
           
           <TabsContent value="narrator">
             {bluetoothRole === 'narrator' ? (
-              <NarratorPanel />
+              <NarratorPanel players={[]} />
             ) : (
               <Card className="border-2 border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
                 <CardContent className="p-8 text-center">
@@ -514,6 +511,6 @@ export default function Index() {
       </div>
     </div>
   );
-};
+}
 
 export default Index;
