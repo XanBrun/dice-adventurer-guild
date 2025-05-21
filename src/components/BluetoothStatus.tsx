@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,33 +25,16 @@ const BluetoothStatus: React.FC<BluetoothStatusProps> = ({ onRoleChange }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Inicializar el estado
     setIsAvailable(bluetoothManager.isAvailable);
     setIsConnected(bluetoothManager.isConnected);
     setRole(bluetoothManager.role);
     setConnectedDevices(bluetoothManager.connectedDevices);
 
-    // Configurar callbacks
     bluetoothManager.setOnConnectionChangeCallback((connected, updatedDevices) => {
       setIsConnected(connected);
       setRole(bluetoothManager.role);
       setConnectedDevices(updatedDevices || []);
       setIsSearching(false);
-      
-      if (connected) {
-        toast({
-          title: "Bluetooth conectado",
-          description: role === 'narrator' 
-            ? `Modo narrador activado. ${updatedDevices?.length || 0} jugador(es) conectado(s).` 
-            : "Conectado a la partida",
-        });
-      } else {
-        toast({
-          title: "Bluetooth desconectado",
-          description: "Se ha perdido la conexión",
-          variant: "destructive"
-        });
-      }
       
       if (onRoleChange) {
         onRoleChange(bluetoothManager.role);
@@ -64,70 +46,44 @@ const BluetoothStatus: React.FC<BluetoothStatusProps> = ({ onRoleChange }) => {
     });
     
     return () => {
-      // Limpiar callbacks
       bluetoothManager.setOnConnectionChangeCallback(null);
       bluetoothManager.setOnMessageCallback(null);
       bluetoothManager.setOnSearchingCallback(null);
     };
-  }, [onRoleChange, toast, role]);
+  }, [onRoleChange]);
 
   const handleConnectNarrator = async () => {
     try {
       setIsSearching(true);
-      const success = await bluetoothManager.startAsNarrator();
-      if (success) {
-        toast({
-          title: "Modo narrador activado",
-          description: "Esperando a que los jugadores se conecten",
-        });
-      } else {
-        setIsSearching(false);
-        toast({
-          title: "Error",
-          description: "No se pudo iniciar el modo narrador",
-          variant: "destructive"
-        });
-      }
+      await bluetoothManager.startAsNarrator();
     } catch (error) {
-      setIsSearching(false);
       console.error("Error al conectar como narrador:", error);
       toast({
+        variant: "destructive",
         title: "Error",
-        description: "Ocurrió un error al activar el modo narrador",
-        variant: "destructive"
+        description: "No se pudo iniciar el modo narrador"
       });
+      setIsSearching(false);
     }
   };
 
   const handleConnectPlayer = async () => {
     try {
       setIsSearching(true);
-      const success = await bluetoothManager.connectAsPlayer();
-      if (!success) {
-        setIsSearching(false);
-        toast({
-          title: "Error",
-          description: "No se pudo conectar a la partida",
-          variant: "destructive"
-        });
-      }
+      await bluetoothManager.connectAsPlayer();
     } catch (error) {
-      setIsSearching(false);
       console.error("Error al conectar como jugador:", error);
       toast({
+        variant: "destructive",
         title: "Error",
-        description: "Ocurrió un error al conectarse a la partida",
-        variant: "destructive"
+        description: "No se pudo conectar a la partida"
       });
+      setIsSearching(false);
     }
   };
 
   const handleDisconnect = () => {
     bluetoothManager.disconnect();
-    toast({
-      title: "Desconectado",
-      description: "Se ha desconectado de la partida",
-    });
   };
 
   if (!isAvailable) {

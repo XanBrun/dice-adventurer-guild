@@ -1,14 +1,14 @@
+// Bluetooth Web API utilities
+import { toast } from "@/components/ui/sonner";
 
-// Utilidades para la gestión de Bluetooth
+export type BluetoothRole = 'narrator' | 'player' | 'none';
 
-// Interfaz para el dispositivo Bluetooth
 export interface BluetoothDevice {
   id: string;
   name: string;
   isConnected: boolean;
 }
 
-// Interfaz para los mensajes enviados por Bluetooth
 export interface BluetoothMessage {
   type: 'ROLL' | 'CHARACTER' | 'ENEMY' | 'CHAT' | 'SYSTEM';
   playerId: string;
@@ -17,11 +17,7 @@ export interface BluetoothMessage {
   timestamp: Date;
 }
 
-// Estado global de la conexión Bluetooth
-export type BluetoothRole = 'narrator' | 'player' | 'none';
-
-// Clase principal para gestionar la conexión Bluetooth
-export class BluetoothManager {
+class BluetoothManager {
   private static instance: BluetoothManager;
   private _role: BluetoothRole = 'none';
   private _isAvailable: boolean = false;
@@ -30,16 +26,14 @@ export class BluetoothManager {
   private _onMessageCallback: ((message: BluetoothMessage) => void) | null = null;
   private _onConnectionChangeCallback: ((connected: boolean, devices?: BluetoothDevice[]) => void) | null = null;
   private _onSearchingCallback: ((searching: boolean) => void) | null = null;
-  private _device: any = null;
-  private _server: any = null;
-  private _characteristic: any = null;
-  private _serviceUUID: string = '0000180d-0000-1000-8000-00805f9b34fb'; // UUID estándar para servicio de corazón
-  private _characteristicUUID: string = '00002a37-0000-1000-8000-00805f9b34fb'; // UUID para medición de ritmo cardíaco
+  private _characteristic: BluetoothRemoteGATTCharacteristic | null = null;
+  private _server: BluetoothRemoteGATTServer | null = null;
+
+  private readonly SERVICE_UUID = '00001234-0000-1000-8000-00805f9b34fb';
+  private readonly CHARACTERISTIC_UUID = '00001235-0000-1000-8000-00805f9b34fb';
 
   private constructor() {
-    // Comprobamos si el navegador soporta Bluetooth
     this._isAvailable = 'bluetooth' in navigator;
-    console.log('Bluetooth disponible:', this._isAvailable);
   }
 
   public static getInstance(): BluetoothManager {
@@ -49,7 +43,6 @@ export class BluetoothManager {
     return BluetoothManager.instance;
   }
 
-  // Getters públicos
   public get isAvailable(): boolean {
     return this._isAvailable;
   }
@@ -66,7 +59,6 @@ export class BluetoothManager {
     return [...this._connectedDevices];
   }
 
-  // Callbacks para eventos
   public setOnMessageCallback(callback: ((message: BluetoothMessage) => void) | null) {
     this._onMessageCallback = callback;
   }
@@ -74,163 +66,174 @@ export class BluetoothManager {
   public setOnConnectionChangeCallback(callback: ((connected: boolean, devices?: BluetoothDevice[]) => void) | null) {
     this._onConnectionChangeCallback = callback;
   }
-  
+
   public setOnSearchingCallback(callback: ((searching: boolean) => void) | null) {
     this._onSearchingCallback = callback;
   }
 
-  // Método para notificar que estamos buscando
   private notifySearchingState(searching: boolean) {
     if (this._onSearchingCallback) {
       this._onSearchingCallback(searching);
     }
   }
 
-  // Para iniciar como narrador (servidor)
+  private async initializeGATTServer(): Promise<boolean> {
+    try {
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ services: [this.SERVICE_UUID] }]
+      });
+
+      this._server = await device.gatt?.connect();
+      if (!this._server) {
+        throw new Error('Failed to connect to GATT server');
+      }
+
+      const service = await this._server.getPrimaryService(this.SERVICE_UUID);
+      this._characteristic = await service.getCharacteristic(this.CHARACTERISTIC_UUID);
+
+      // Set up notification handling
+      await this._characteristic.startNotifications();
+      this._characteristic.addEventListener('characteristicvaluechanged', this.handleCharacteristicValueChanged.bind(this));
+
+      return true;
+    } catch (error) {
+      console.error('Error initializing GATT server:', error);
+      return false;
+    }
+  }
+
+  private handleCharacteristicValueChanged(event: Event) {
+    const characteristic = event.target as BluetoothRemoteGATTCharacteristic;
+    const value = characteristic.value;
+    if (!value) return;
+
+    const decoder = new TextDecoder('utf-8');
+    const message = JSON.parse(decoder.decode(value));
+
+    if (this._onMessageCallback) {
+      this._onMessageCallback(message);
+    }
+  }
+
   public async startAsNarrator(): Promise<boolean> {
     if (!this._isAvailable) {
-      console.error('Bluetooth no disponible en este dispositivo');
+      toast.error("Bluetooth no disponible", {
+        description: "Tu dispositivo no soporta Bluetooth"
+      });
       return false;
     }
 
     try {
       this.notifySearchingState(true);
-      
-      // En una implementación real, solicitaríamos permisos Bluetooth
-      // y configuraríamos un GATT Server.
-      // Para esta demo, simularemos el proceso.
-      
-      console.log('Iniciando como narrador...');
-      
-      // Simular tiempo de configuración
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      this._role = 'narrator';
-      this._isConnected = true;
-      this._connectedDevices = [];
-      
-      if (this._onConnectionChangeCallback) {
-        this._onConnectionChangeCallback(true, this._connectedDevices);
+      const success = await this.initializeGATTServer();
+
+      if (success) {
+        this._role = 'narrator';
+        this._isConnected = true;
+        this._connectedDevices = [];
+
+        if (this._onConnectionChangeCallback) {
+          this._onConnectionChangeCallback(true, this._connectedDevices);
+        }
+
+        toast.success("Modo narrador activado", {
+          description: "Esperando conexiones de jugadores..."
+        });
+      } else {
+        throw new Error('Failed to initialize as narrator');
       }
-      
+
       this.notifySearchingState(false);
-      
-      // Iniciar simulación de jugadores que se conectan para la demo
-      this.simulatePlayersConnecting();
-      
       return true;
     } catch (error) {
-      console.error('Error al iniciar como narrador:', error);
+      console.error('Error starting as narrator:', error);
+      toast.error("Error al iniciar como narrador", {
+        description: error instanceof Error ? error.message : "Error desconocido"
+      });
       this.notifySearchingState(false);
       return false;
     }
   }
 
-  // Para conectar como jugador (cliente)
   public async connectAsPlayer(): Promise<boolean> {
     if (!this._isAvailable) {
-      console.error('Bluetooth no disponible en este dispositivo');
+      toast.error("Bluetooth no disponible", {
+        description: "Tu dispositivo no soporta Bluetooth"
+      });
       return false;
     }
 
     try {
       this.notifySearchingState(true);
-      
-      // Solicitar dispositivo Bluetooth
-      try {
-        this._device = await (navigator as any).bluetooth.requestDevice({
-          filters: [
-            { services: [this._serviceUUID] },
-            { name: 'Narrador RPG' } // Filtro adicional para encontrar narradores
-          ],
-          optionalServices: [this._serviceUUID]
+      const success = await this.initializeGATTServer();
+
+      if (success) {
+        this._role = 'player';
+        this._isConnected = true;
+        
+        const device: BluetoothDevice = {
+          id: 'narrator',
+          name: 'Narrador',
+          isConnected: true
+        };
+        
+        this._connectedDevices = [device];
+
+        if (this._onConnectionChangeCallback) {
+          this._onConnectionChangeCallback(true, this._connectedDevices);
+        }
+
+        toast.success("Conectado al narrador", {
+          description: "Ya puedes participar en la partida"
         });
-  
-        console.log('Dispositivo seleccionado:', this._device.name);
-        
-        // Conectar al dispositivo
-        const server = await this._device.gatt.connect();
-        this._server = server;
-        console.log('Conectado al servidor GATT');
-        
-        // En una implementación real, obtendrías el servicio y características específicas
-        // const service = await server.getPrimaryService(this._serviceUUID);
-        // this._characteristic = await service.getCharacteristic(this._characteristicUUID);
-        
-        this._role = 'player';
-        this._isConnected = true;
-        
-        // Añadir el dispositivo a la lista de conectados
-        const newDevice: BluetoothDevice = {
-          id: this._device.id,
-          name: this._device.name || 'Narrador',
-          isConnected: true
-        };
-        
-        this._connectedDevices = [newDevice];
-        
-        if (this._onConnectionChangeCallback) {
-          this._onConnectionChangeCallback(true, this._connectedDevices);
-        }
-      } catch (error) {
-        console.error('Error al solicitar dispositivo Bluetooth:', error);
-        
-        // Para la demostración, vamos a simular que se conectó correctamente
-        console.log('Simulando conexión exitosa para demostración...');
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        this._role = 'player';
-        this._isConnected = true;
-        
-        // Simular dispositivo conectado
-        const simulatedDevice: BluetoothDevice = {
-          id: 'simulated-narrator-id',
-          name: 'Narrador (Simulado)',
-          isConnected: true
-        };
-        
-        this._connectedDevices = [simulatedDevice];
-        
-        if (this._onConnectionChangeCallback) {
-          this._onConnectionChangeCallback(true, this._connectedDevices);
-        }
+      } else {
+        throw new Error('Failed to connect as player');
       }
-      
+
       this.notifySearchingState(false);
       return true;
     } catch (error) {
-      console.error('Error al conectar como jugador:', error);
+      console.error('Error connecting as player:', error);
+      toast.error("Error al conectar como jugador", {
+        description: error instanceof Error ? error.message : "Error desconocido"
+      });
       this.notifySearchingState(false);
       return false;
     }
   }
 
-  // Para desconectar
   public disconnect(): void {
-    if (this._device && this._isConnected) {
-      try {
-        if (this._device.gatt && this._device.gatt.connected) {
-          this._device.gatt.disconnect();
-        }
-        console.log('Desconectado del servidor');
-      } catch (error) {
-        console.error('Error al desconectar:', error);
+    try {
+      if (this._characteristic) {
+        this._characteristic.stopNotifications();
       }
+      if (this._server) {
+        this._server.disconnect();
+      }
+    } catch (error) {
+      console.error('Error during disconnect:', error);
     }
-    
+
     this._isConnected = false;
     this._role = 'none';
     this._connectedDevices = [];
-    
+    this._characteristic = null;
+    this._server = null;
+
     if (this._onConnectionChangeCallback) {
-      this._onConnectionChangeCallback(false, this._connectedDevices);
+      this._onConnectionChangeCallback(false, []);
     }
+
+    toast.info("Desconectado", {
+      description: "Se ha cerrado la conexión Bluetooth"
+    });
   }
 
-  // Para enviar un mensaje
   public async sendMessage(message: Omit<BluetoothMessage, 'timestamp'>): Promise<boolean> {
-    if (!this._isConnected) {
-      console.error('No hay conexión Bluetooth activa');
+    if (!this._isConnected || !this._characteristic) {
+      toast.error("No hay conexión", {
+        description: "No hay una conexión Bluetooth activa"
+      });
       return false;
     }
 
@@ -239,85 +242,19 @@ export class BluetoothManager {
         ...message,
         timestamp: new Date()
       };
-      
-      console.log('Enviando mensaje:', fullMessage);
-      
-      // En una implementación real, aquí enviarías los datos a través de la característica Bluetooth
-      // Por ahora, simplemente simulamos el envío y procesamos el mensaje localmente
-      setTimeout(() => {
-        if (this._onMessageCallback) {
-          this._onMessageCallback(fullMessage);
-        }
-      }, 100);
-      
+
+      const encoder = new TextEncoder();
+      const data = encoder.encode(JSON.stringify(fullMessage));
+      await this._characteristic.writeValue(data);
+
       return true;
     } catch (error) {
-      console.error('Error al enviar mensaje:', error);
+      console.error('Error sending message:', error);
+      toast.error("Error al enviar mensaje", {
+        description: error instanceof Error ? error.message : "Error desconocido"
+      });
       return false;
     }
-  }
-
-  // Simulación de conexión de jugadores para el modo narrador (demo)
-  private simulatePlayersConnecting(): void {
-    if (this._role !== 'narrator') return;
-    
-    // Simular que un jugador se conecta después de 3 segundos
-    setTimeout(() => {
-      if (!this._isConnected || this._role !== 'narrator') return;
-      
-      const player1: BluetoothDevice = {
-        id: 'simulated-player-1',
-        name: 'Jugador 1',
-        isConnected: true
-      };
-      
-      this._connectedDevices = [...this._connectedDevices, player1];
-      
-      if (this._onConnectionChangeCallback) {
-        this._onConnectionChangeCallback(true, this._connectedDevices);
-      }
-      
-      // Simular mensaje de conexión
-      if (this._onMessageCallback) {
-        const connectMessage: BluetoothMessage = {
-          type: 'CHARACTER',
-          playerId: player1.id,
-          playerName: 'Aragorn',
-          data: { joined: true },
-          timestamp: new Date()
-        };
-        this._onMessageCallback(connectMessage);
-      }
-    }, 3000);
-    
-    // Simular que otro jugador se conecta después de 7 segundos
-    setTimeout(() => {
-      if (!this._isConnected || this._role !== 'narrator') return;
-      
-      const player2: BluetoothDevice = {
-        id: 'simulated-player-2',
-        name: 'Jugador 2',
-        isConnected: true
-      };
-      
-      this._connectedDevices = [...this._connectedDevices, player2];
-      
-      if (this._onConnectionChangeCallback) {
-        this._onConnectionChangeCallback(true, this._connectedDevices);
-      }
-      
-      // Simular mensaje de conexión
-      if (this._onMessageCallback) {
-        const connectMessage: BluetoothMessage = {
-          type: 'CHARACTER',
-          playerId: player2.id,
-          playerName: 'Gandalf',
-          data: { joined: true },
-          timestamp: new Date()
-        };
-        this._onMessageCallback(connectMessage);
-      }
-    }, 7000);
   }
 }
 
