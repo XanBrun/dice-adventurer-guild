@@ -1,16 +1,32 @@
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Campaign, PREDEFINED_CAMPAIGNS } from "@/lib/campaign-utils";
-import { ChevronRight, MapIcon, Shield, Scroll } from "lucide-react";
+import { ChevronRight, MapIcon, Shield, Scroll, Home, Play } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/sonner";
+import { useRollSounds } from "@/hooks/useRollSounds";
 
 const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
   const navigate = useNavigate();
+  const { playSound } = useRollSounds();
+  
+  const handleLaunchCampaign = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    playSound('d20');
+    toast.success(`¡Campaña "${campaign.name}" iniciada!`, {
+      description: "Prepárate para la aventura"
+    });
+    
+    // Navigate to campaign detail after a short delay for a better UX
+    setTimeout(() => {
+      navigate(`/campaigns/${campaign.id}`);
+    }, 500);
+  };
   
   return (
     <motion.div
@@ -54,9 +70,21 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
             </div>
           </div>
         </CardContent>
-        <CardFooter>
-          <Button onClick={() => navigate(`/campaigns/${campaign.id}`)} className="w-full">
-            Ver detalles <ChevronRight className="h-4 w-4 ml-1" />
+        <CardFooter className="flex gap-2">
+          <Button 
+            onClick={handleLaunchCampaign} 
+            className="flex-1"
+            variant="default"
+          >
+            <Play className="h-4 w-4 mr-1" />
+            Iniciar
+          </Button>
+          <Button 
+            onClick={() => navigate(`/campaigns/${campaign.id}`)} 
+            variant="outline"
+            className="flex-1"
+          >
+            Detalles <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </CardFooter>
       </Card>
@@ -66,6 +94,7 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
 
 const Campaigns = () => {
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
+  const navigate = useNavigate();
   
   const filteredCampaigns = difficultyFilter === "all" 
     ? PREDEFINED_CAMPAIGNS 
@@ -80,6 +109,16 @@ const Campaigns = () => {
           transition={{ duration: 0.5 }}
           className="mb-6 flex flex-col items-center justify-between gap-4"
         >
+          <div className="w-full flex items-center justify-between mb-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/')}
+              className="gap-2"
+            >
+              <Home className="h-4 w-4" /> Volver al inicio
+            </Button>
+          </div>
+          
           <div className="flex items-center space-x-3">
             <MapIcon className="h-8 w-8 text-primary" />
             <h1 className="text-4xl md:text-5xl font-medieval text-center text-primary">

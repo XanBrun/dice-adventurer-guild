@@ -1,481 +1,438 @@
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Enemy } from "@/lib/character-utils";
-import { performDiceRoll } from "@/lib/dice-utils";
-import { toast } from "@/components/ui/sonner";
-import { STANDARD_ACTIONS } from "@/lib/combat-utils";
-import { Sword, Shield, Circle, User, UserRound } from "lucide-react";
+import { Sword, Shield, Activity, SkipForward, Plus, Trash2, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
-
-interface InitiativeEntry {
-  id: string;
-  name: string;
-  initiative: number;
-  isPlayer: boolean;
-  hitPoints?: {
-    current: number;
-    max: number;
-  };
-  armorClass?: number;
-  temporaryHP?: number;
-  conditions?: string[];
-  enemyRef?: Enemy;
-}
+import { Player, generateRandomId, calculateModifier } from "@/lib/character-utils";
+import { Enemy, CombatAction, CombatTurn, rollInitiative } from "@/lib/combat-utils";
+import { toast } from "@/components/ui/sonner";
 
 interface CombatTrackerProps {
-  enemies: Enemy[];
-  connectedPlayers: string[];
-  onEnemyDamage?: (enemyId: string, damage: number) => void;
+  players: Player[];
+  enemies?: Enemy[];
 }
 
-const CombatTracker: React.FC<CombatTrackerProps> = ({ 
-  enemies, 
-  connectedPlayers,
-  onEnemyDamage
-}) => {
-  const [initiativeOrder, setInitiativeOrder] = useState<InitiativeEntry[]>([]);
-  const [currentTurn, setCurrentTurn] = useState<number>(-1);
-  const [isCombatActive, setIsCombatActive] = useState(false);
-  const [damageAmount, setDamageAmount] = useState<string>("");
-  const [round, setRound] = useState(1);
-  const [elapsedTurns, setElapsedTurns] = useState(0);
+const CombatTracker: React.FC<CombatTrackerProps> = ({ players, enemies = [] }) => {
+  const [combatants, setCombatants] = useState<(Player | Enemy)[]>([]);
+  const [turns, setTurns] = useState<CombatTurn[]>([]);
+  const [currentTurnIndex, setCurrentTurnIndex] = useState<number>(0);
+  const [currentRound, setCurrentRound] = useState<number>(1);
+  const [isActive, setIsActive] = useState<boolean>(false);
+  const [customEnemies, setCustomEnemies] = useState<Enemy[]>([]);
+  const [newEnemyName, setNewEnemyName] = useState<string>('');
+  const [newEnemyHP, setNewEnemyHP] = useState<string>('10');
+  const [activeTab, setActiveTab] = useState<string>("setup");
 
-  // Start combat and calculate initiative
+  // Initialize combat with players and enemies
+  useEffect(() => {
+    if (players.length > 0) {
+      const initialCombatants = [
+        ...players,
+        ...enemies,
+        ...customEnemies
+      ];
+      setCombatants(initialCombatants);
+    }
+  }, [players, enemies, customEnemies]);
+
   const handleStartCombat = () => {
-    const initiativeEntries: InitiativeEntry[] = [];
-    
-    // Add enemies
-    enemies.forEach(enemy => {
-      // Roll initiative (d20 + modifier)
-      const initiativeRoll = Math.floor(Math.random() * 20) + 1 + enemy.initiative;
-      
-      initiativeEntries.push({
-        id: enemy.id,
-        name: enemy.name,
-        initiative: initiativeRoll,
-        isPlayer: false,
-        hitPoints: { ...enemy.hitPoints },
-        armorClass: enemy.armorClass,
-        conditions: [],
-        enemyRef: enemy
-      });
+    if (combatants.length < 2) {
+      toast.error("Se necesitan al menos dos combatientes para iniciar el combate");
+      return;
+    }
+
+    // Roll initiative for all combatants
+    const combatantsWithInitiative = combatants.map(combatant => {
+      const initiativeRoll = rollInitiative(combatant);
+      return {
+        ...combatant,
+        initiativeRoll
+      };
     });
-    
-    // Add connected players
-    connectedPlayers.forEach((playerName, index) => {
-      // Roll initiative for players
-      const initiativeRoll = Math.floor(Math.random() * 20) + 1;
-      
-      initiativeEntries.push({
-        id: `player_${index}`,
-        name: playerName,
-        initiative: initiativeRoll,
-        isPlayer: true,
-        conditions: []
-      });
-    });
-    
-    // Sort by initiative (higher to lower)
-    const orderedInitiative = initiativeEntries.sort((a, b) => b.initiative - a.initiative);
-    setInitiativeOrder(orderedInitiative);
-    setCurrentTurn(0);
-    setIsCombatActive(true);
-    setRound(1);
-    setElapsedTurns(0);
-    
-    toast.success("¡Combate iniciado!", {
-      description: `Orden de iniciativa calculado. ${orderedInitiative[0]?.name} comienza.`
+
+    // Sort by initiative (higher first)
+    const sortedCombatants = [...combatantsWithInitiative].sort(
+      (a, b) => b.initiativeRoll - a.initiativeRoll
+    );
+
+    // Create initial turns
+    const initialTurns: CombatTurn[] = sortedCombatants.map(combatant => ({
+      id: generateRandomId(),
+      combatantId: combatant.id,
+      combatantName: combatant.name,
+      initiative: combatant.initiativeRoll,
+      isPlayer: 'class' in combatant,
+      actions: []
+    }));
+
+    setTurns(initialTurns);
+    setCurrentTurnIndex(0);
+    setCurrentRound(1);
+    setIsActive(true);
+    setActiveTab("combat");
+
+    toast.success("¡Combate iniciado!", { 
+      description: "Los combatientes han rodado iniciativa y el combate ha comenzado"
     });
   };
 
-  // Move to the next turn
+  const handleAddAction = (action: CombatAction) => {
+    if (!isActive || currentTurnIndex >= turns.length) return;
+
+    setTurns(prevTurns => {
+      const newTurns = [...prevTurns];
+      newTurns[currentTurnIndex].actions.push(action);
+      return newTurns;
+    });
+
+    toast.info(`${action.type} registrado`);
+  };
+
   const handleNextTurn = () => {
-    if (initiativeOrder.length === 0) return;
-    
-    const nextTurn = (currentTurn + 1) % initiativeOrder.length;
-    
-    // If we've gone through all participants, increase the round counter
-    if (nextTurn === 0) {
-      setRound(prevRound => prevRound + 1);
+    if (currentTurnIndex >= turns.length - 1) {
+      // End of round, go back to first combatant and increase round counter
+      setCurrentTurnIndex(0);
+      setCurrentRound(prev => prev + 1);
+      toast.success(`¡Comienza la ronda ${currentRound + 1}!`);
+    } else {
+      // Move to next combatant
+      setCurrentTurnIndex(prev => prev + 1);
     }
-    
-    setCurrentTurn(nextTurn);
-    setElapsedTurns(prev => prev + 1);
-    
-    toast({
-      title: "Siguiente turno",
-      description: `Es el turno de ${initiativeOrder[nextTurn].name}.`
-    });
   };
 
-  // End combat
   const handleEndCombat = () => {
-    setIsCombatActive(false);
-    setInitiativeOrder([]);
-    setCurrentTurn(-1);
-    setRound(1);
-    setElapsedTurns(0);
-    
-    toast({
-      title: "Combate finalizado",
-      description: "El orden de iniciativa ha sido reiniciado."
-    });
+    setIsActive(false);
+    setTurns([]);
+    setCurrentTurnIndex(0);
+    setCurrentRound(1);
+    setActiveTab("setup");
+    toast.info("Combate finalizado");
   };
 
-  // Apply damage to a participant
-  const handleApplyDamage = (participantId: string) => {
-    const damage = parseInt(damageAmount);
-    if (isNaN(damage)) {
-      toast.error("Cantidad inválida", {
-        description: "Ingresa un número válido para aplicar daño."
-      });
+  const addCustomEnemy = () => {
+    if (!newEnemyName.trim()) {
+      toast.error("Ingresa un nombre para el enemigo");
       return;
     }
 
-    setInitiativeOrder(prevOrder => 
-      prevOrder.map(participant => {
-        if (participant.id === participantId && participant.hitPoints) {
-          const newHP = Math.max(0, participant.hitPoints.current - damage);
-          
-          // If enemy has died
-          if (newHP === 0 && !participant.isPlayer) {
-            toast({
-              title: `${participant.name} ha caído`,
-              description: "0 puntos de vida restantes."
-            });
-          }
-          
-          // Call parent handler if provided
-          if (onEnemyDamage && !participant.isPlayer) {
-            onEnemyDamage(participantId, damage);
-          }
-          
-          return {
-            ...participant,
-            hitPoints: {
-              ...participant.hitPoints,
-              current: newHP
-            }
-          };
-        }
-        return participant;
-      })
-    );
+    const hp = parseInt(newEnemyHP) || 10;
     
-    setDamageAmount("");
-  };
+    const newEnemy: Enemy = {
+      id: generateRandomId(),
+      name: newEnemyName.trim(),
+      stats: {
+        hp: hp,
+        maxHp: hp,
+        ac: 10,
+        initiative: 0
+      },
+      attacks: []
+    };
 
-  // Apply healing to a participant
-  const handleApplyHealing = (participantId: string) => {
-    const healing = parseInt(damageAmount);
-    if (isNaN(healing)) {
-      toast.error("Cantidad inválida", {
-        description: "Ingresa un número válido para aplicar curación."
-      });
-      return;
-    }
-
-    setInitiativeOrder(prevOrder => 
-      prevOrder.map(participant => {
-        if (participant.id === participantId && participant.hitPoints) {
-          const newHP = Math.min(participant.hitPoints.max, participant.hitPoints.current + healing);
-          return {
-            ...participant,
-            hitPoints: {
-              ...participant.hitPoints,
-              current: newHP
-            }
-          };
-        }
-        return participant;
-      })
-    );
+    setCustomEnemies(prev => [...prev, newEnemy]);
+    setCombatants(prev => [...prev, newEnemy]);
+    setNewEnemyName('');
+    setNewEnemyHP('10');
     
-    setDamageAmount("");
-  };
-
-  // Toggle a condition on a participant
-  const handleToggleCondition = (participantId: string, condition: string) => {
-    setInitiativeOrder(prevOrder => 
-      prevOrder.map(participant => {
-        if (participant.id === participantId) {
-          const conditions = participant.conditions || [];
-          const hasCondition = conditions.includes(condition);
-          
-          return {
-            ...participant,
-            conditions: hasCondition 
-              ? conditions.filter(c => c !== condition)
-              : [...conditions, condition]
-          };
-        }
-        return participant;
-      })
-    );
-  };
-
-  // Roll a check for a participant
-  const handleRollCheck = (participantId: string, checkType: string) => {
-    const participant = initiativeOrder.find(p => p.id === participantId);
-    if (!participant) return;
-    
-    const roll = performDiceRoll('d20', 1, 0, 'normal', participant.name);
-    
-    toast({
-      title: `Tirada de ${participant.name}`,
-      description: `${checkType}: ${roll.total}`
+    toast.success("Enemigo añadido", { 
+      description: `${newEnemyName} ha sido añadido al combate` 
     });
   };
 
-  // Calculate health percentage for displaying health bars
-  const getHealthPercentage = (current: number, max: number) => {
-    return Math.max(0, Math.min(100, (current / max) * 100));
+  const removeCustomEnemy = (id: string) => {
+    setCustomEnemies(prev => prev.filter(enemy => enemy.id !== id));
+    setCombatants(prev => prev.filter(c => c.id !== id));
   };
 
-  // Get health status color
-  const getHealthColor = (current: number, max: number) => {
-    const percentage = (current / max) * 100;
-    if (percentage <= 25) return "bg-red-500";
-    if (percentage <= 50) return "bg-orange-500";
-    if (percentage <= 75) return "bg-yellow-500";
-    return "bg-green-500";
-  };
+  // Get current combatant info
+  const currentCombatant = isActive && turns.length > 0 ? turns[currentTurnIndex] : null;
 
   return (
-    <Card className="border border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="font-medieval">Tablero de Combate</CardTitle>
-        <div className="space-x-2">
-          {isCombatActive ? (
-            <>
-              <Button variant="outline" onClick={handleNextTurn}>
-                Siguiente Turno
-              </Button>
-              <Button variant="destructive" onClick={handleEndCombat}>
-                Finalizar Combate
-              </Button>
-            </>
-          ) : (
-            <Button 
-              onClick={handleStartCombat} 
-              className="font-medieval bg-accent text-black hover:bg-accent/90"
-              disabled={enemies.length === 0 && connectedPlayers.length === 0}
-            >
-              Iniciar Combate
-            </Button>
-          )}
-        </div>
+    <Card className="border-2 border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
+      <CardHeader>
+        <CardTitle className="font-medieval flex items-center gap-2">
+          <Sword className="h-5 w-5 text-primary" />
+          Sistema de Combate
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col md:flex-row gap-4 justify-between mb-4">
-          <div>
-            <h3 className="font-bold mb-2">Participantes:</h3>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {enemies.map((enemy) => (
-                <div key={enemy.id} className="bg-secondary/30 px-2 py-1 rounded-md text-sm">
-                  {enemy.name}
-                </div>
-              ))}
-              {connectedPlayers.map((player, i) => (
-                <div key={i} className="bg-primary/20 px-2 py-1 rounded-md text-sm">
-                  {player}
-                </div>
-              ))}
-            </div>
-          </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="w-full mb-4">
+            <TabsTrigger value="setup" className="w-1/2">
+              Preparación
+            </TabsTrigger>
+            <TabsTrigger value="combat" className="w-1/2" disabled={!isActive}>
+              Combate
+            </TabsTrigger>
+          </TabsList>
           
-          {isCombatActive && (
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-lg px-3 py-1">
-                Ronda {round}
-              </Badge>
-              <Badge variant="secondary" className="text-sm">
-                Turnos: {elapsedTurns}
-              </Badge>
-            </div>
-          )}
-        </div>
-        
-        {isCombatActive && (
-          <div className="space-y-4">
-            <div className="flex gap-2 items-center mb-4">
-              <Input
-                type="number"
-                value={damageAmount}
-                onChange={(e) => setDamageAmount(e.target.value)}
-                placeholder="Cantidad de daño/curación"
-                className="max-w-[150px]"
-              />
-              <span className="text-sm text-muted-foreground">
-                (Usa este valor para daño o curación)
-              </span>
-            </div>
-            
-            <ScrollArea className="h-[400px] border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]">Turno</TableHead>
-                    <TableHead>Participante</TableHead>
-                    <TableHead>Iniciativa</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {initiativeOrder.map((entry, index) => (
-                    <TableRow 
-                      key={entry.id} 
-                      className={`${index === currentTurn ? 'bg-accent/20' : ''}`}
-                    >
-                      <TableCell>
-                        {index === currentTurn ? (
-                          <motion.div 
-                            animate={{ scale: [1, 1.2, 1] }} 
-                            transition={{ repeat: Infinity, repeatDelay: 1 }}
+          <TabsContent value="setup">
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-medieval mb-2 text-lg">Jugadores ({players.length})</h3>
+                <ScrollArea className="h-[120px]">
+                  {players.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {players.map(player => (
+                        <div key={player.id} className="flex items-center gap-2 p-2 border rounded-md">
+                          <div className="flex-1">
+                            <div className="font-bold">{player.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              Iniciativa: {calculateModifier(player.attributes.dexterity)}
+                            </div>
+                          </div>
+                          <Badge variant="outline">
+                            {player.class}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      No hay jugadores disponibles
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <h3 className="font-medieval mb-2 text-lg">Enemigos de la Campaña ({enemies.length})</h3>
+                <ScrollArea className="h-[120px]">
+                  {enemies.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {enemies.map(enemy => (
+                        <div key={enemy.id} className="flex items-center gap-2 p-2 border rounded-md">
+                          <div className="flex-1">
+                            <div className="font-bold">{enemy.name}</div>
+                            <div className="text-xs">HP: {enemy.stats.hp}/{enemy.stats.maxHp}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      No hay enemigos de campaña
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <h3 className="font-medieval mb-2 text-lg">Añadir Enemigos Personalizados</h3>
+                <div className="flex gap-2 mb-2">
+                  <Input 
+                    placeholder="Nombre del enemigo"
+                    value={newEnemyName}
+                    onChange={e => setNewEnemyName(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Input 
+                    placeholder="HP"
+                    value={newEnemyHP}
+                    onChange={e => setNewEnemyHP(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="w-20"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={addCustomEnemy}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <ScrollArea className="h-[120px]">
+                  {customEnemies.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {customEnemies.map(enemy => (
+                        <div key={enemy.id} className="flex items-center gap-2 p-2 border rounded-md">
+                          <div className="flex-1">
+                            <div className="font-bold">{enemy.name}</div>
+                            <div className="text-xs">HP: {enemy.stats.hp}</div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => removeCustomEnemy(enemy.id)}
+                            className="h-7 w-7 text-destructive"
                           >
-                            <Badge variant="default" className="h-6 w-6 rounded-full p-0 flex items-center justify-center">
-                              {index + 1}
-                            </Badge>
-                          </motion.div>
-                        ) : (
-                          <Badge variant="outline" className="h-6 w-6 rounded-full p-0 flex items-center justify-center">
-                            {index + 1}
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      No hay enemigos personalizados
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+              
+              <div className="mt-6 flex justify-center">
+                <Button 
+                  onClick={handleStartCombat}
+                  disabled={combatants.length < 2}
+                  className="w-full max-w-xs"
+                >
+                  <Sword className="mr-2 h-4 w-4" />
+                  Iniciar Combate
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="combat">
+            {isActive && (
+              <div className="space-y-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                  <div>
+                    <Badge variant="outline" className="mb-2">
+                      Ronda {currentRound}
+                    </Badge>
+                    <h3 className="text-lg font-medieval">
+                      Turno: {currentCombatant?.combatantName}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Iniciativa: {currentCombatant?.initiative}
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleNextTurn}
+                    >
+                      <SkipForward className="mr-1 h-4 w-4" />
+                      Siguiente turno
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={handleEndCombat}
+                    >
+                      Finalizar combate
+                    </Button>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleAddAction({
+                      type: 'attack',
+                      description: 'Realizó un ataque',
+                      timestamp: new Date()
+                    })}
+                    className="flex items-center gap-2"
+                  >
+                    <Sword className="h-4 w-4" />
+                    Atacar
+                  </Button>
+                  
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleAddAction({
+                      type: 'defend',
+                      description: 'Tomó posición defensiva',
+                      timestamp: new Date()
+                    })}
+                    className="flex items-center gap-2"
+                  >
+                    <Shield className="h-4 w-4" />
+                    Defender
+                  </Button>
+                  
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleAddAction({
+                      type: 'skill',
+                      description: 'Usó una habilidad especial',
+                      timestamp: new Date()
+                    })}
+                    className="flex items-center gap-2"
+                  >
+                    <Activity className="h-4 w-4" />
+                    Habilidad
+                  </Button>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <h3 className="font-medieval mb-2">Orden de Iniciativa</h3>
+                  <ScrollArea className="h-[150px] border rounded-md p-2">
+                    {turns.map((turn, index) => (
+                      <div 
+                        key={turn.id}
+                        className={`flex items-center justify-between p-2 rounded-md mb-1 ${
+                          index === currentTurnIndex ? 'bg-primary/10 border border-primary' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="w-8 h-8 rounded-full flex items-center justify-center p-0">
+                            {turn.initiative}
+                          </Badge>
+                          <div>
+                            <div className="font-medium">{turn.combatantName}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {turn.isPlayer ? 'Jugador' : 'Enemigo'}
+                            </div>
+                          </div>
+                        </div>
+                        {turn.actions.length > 0 && (
+                          <Badge variant="secondary" className="text-xs">
+                            {turn.actions.length} {turn.actions.length === 1 ? 'acción' : 'acciones'}
                           </Badge>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {entry.isPlayer ? (
-                            <UserRound className="h-4 w-4 text-primary" />
-                          ) : (
-                            <Sword className="h-4 w-4 text-destructive" />
-                          )}
-                          <span className={`font-bold ${entry.isPlayer ? 'text-primary' : ''}`}>
-                            {entry.name}
-                          </span>
-                        </div>
-                        
-                        {entry.hitPoints && (
-                          <div className="mt-1 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full ${getHealthColor(entry.hitPoints.current, entry.hitPoints.max)}`}
-                              style={{ width: `${getHealthPercentage(entry.hitPoints.current, entry.hitPoints.max)}%` }}
-                            ></div>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </div>
+                
+                <div>
+                  <h3 className="font-medieval mb-2">Registro de Acciones</h3>
+                  <ScrollArea className="h-[150px] border rounded-md p-2">
+                    {turns.flatMap(turn => 
+                      turn.actions.map((action, i) => (
+                        <div key={`${turn.id}-${i}`} className="mb-1 border-b pb-1 last:border-0">
+                          <div className="flex justify-between">
+                            <span className="font-medium">{turn.combatantName}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {action.type}
+                            </Badge>
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell>{entry.initiative}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col space-y-1">
-                          {entry.hitPoints && (
-                            <span className="text-sm">
-                              PV: {entry.hitPoints.current}/{entry.hitPoints.max}
-                            </span>
-                          )}
-                          {entry.armorClass && (
-                            <span className="text-sm">
-                              CA: {entry.armorClass}
-                            </span>
-                          )}
-                          {entry.conditions && entry.conditions.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {entry.conditions.map((condition, i) => (
-                                <Badge key={i} variant="destructive" className="text-xs">
-                                  {condition}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
+                          <p className="text-sm text-muted-foreground">{action.description}</p>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(action.timestamp).toLocaleTimeString()}
+                          </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="space-x-1">
-                          {entry.hitPoints && (
-                            <>
-                              <Button 
-                                variant="destructive" 
-                                size="sm"
-                                className="h-7 text-xs"
-                                onClick={() => handleApplyDamage(entry.id)}
-                                disabled={!damageAmount}
-                              >
-                                Daño
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="h-7 text-xs bg-green-100 hover:bg-green-200 border-green-200"
-                                onClick={() => handleApplyHealing(entry.id)}
-                                disabled={!damageAmount}
-                              >
-                                Curar
-                              </Button>
-                            </>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => handleRollCheck(entry.id, 'Iniciativa')}
-                          >
-                            d20
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => handleToggleCondition(entry.id, 'Aturdido')}
-                          >
-                            Estado
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-            
-            {currentTurn >= 0 && initiativeOrder[currentTurn] && (
-              <div className="mt-4 p-3 bg-accent/10 rounded-md">
-                <h3 className="font-bold mb-2">Turno actual: {initiativeOrder[currentTurn].name}</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                  {STANDARD_ACTIONS.slice(0, 8).map((action, i) => (
-                    <Button
-                      key={i}
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-8 justify-start"
-                      onClick={() => {
-                        toast({
-                          title: `${initiativeOrder[currentTurn].name} usa ${action.name}`,
-                          description: action.description
-                        });
-                      }}
-                    >
-                      {action.name}
-                    </Button>
-                  ))}
+                      ))
+                    )}
+                    {turns.flatMap(turn => turn.actions).length === 0 && (
+                      <div className="text-center text-muted-foreground py-4">
+                        No hay acciones registradas
+                      </div>
+                    )}
+                  </ScrollArea>
                 </div>
               </div>
             )}
-          </div>
-        )}
-        
-        {!isCombatActive && (enemies.length === 0 && connectedPlayers.length === 0) && (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              No hay participantes para iniciar un combate. Añade enemigos o conecta jugadores.
-            </p>
-          </div>
-        )}
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

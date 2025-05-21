@@ -1,15 +1,17 @@
+
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Campaign, Adventure, getCampaignById } from "@/lib/campaign-utils";
-import { ArrowLeft, CheckCircle, Sword, Trophy, Target, MapPin } from "lucide-react";
+import { ArrowLeft, CheckCircle, Sword, Trophy, Target, MapPin, Home, Play } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRollSounds } from "@/hooks/useRollSounds";
+import { toast } from "@/components/ui/sonner";
 
 const CampaignDetail = () => {
   const { campaignId } = useParams();
@@ -33,6 +35,13 @@ const CampaignDetail = () => {
   const selectedAdventure = campaign?.adventures.find(
     adventure => adventure.id === selectedAdventureId
   );
+  
+  const handleStartCampaign = () => {
+    playSound('d20');
+    toast.success(`¡Campaña "${campaign?.name}" iniciada!`, {
+      description: "¡Que comience la aventura!"
+    });
+  };
 
   if (!campaign) {
     return (
@@ -63,13 +72,22 @@ const CampaignDetail = () => {
           transition={{ duration: 0.3 }}
           className="mb-6"
         >
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/campaigns')}
-            className="mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Volver a campañas
-          </Button>
+          <div className="flex justify-between items-center mb-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/campaigns')}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" /> Volver a campañas
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/')}
+              className="gap-2"
+            >
+              <Home className="h-4 w-4" /> Volver al inicio
+            </Button>
+          </div>
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>
@@ -98,17 +116,18 @@ const CampaignDetail = () => {
           <div className="flex justify-end mb-6">
             <div className="flex gap-3">
               <Button
-                onClick={() => playSound('d20')}
+                onClick={handleStartCampaign}
                 size="sm"
-                variant="outline"
+                variant="default"
+                className="flex items-center gap-2"
               >
-                <Sword className="h-4 w-4 mr-2" /> Iniciar campaña
+                <Play className="h-4 w-4" /> Iniciar campaña
               </Button>
               
               <Button
                 onClick={() => navigate(`/campaigns/${campaign.id}/maps`)}
                 size="sm"
-                variant="default"
+                variant="outline"
               >
                 <MapPin className="h-4 w-4 mr-2" /> Ver mapas
               </Button>

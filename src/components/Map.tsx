@@ -2,8 +2,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, X, Plus, Minus } from "lucide-react";
+import { MapPin, X, Plus, Minus, Home } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "@/components/ui/sonner";
 
 interface MapMarker {
   id: string;
@@ -38,6 +39,7 @@ const Map: React.FC<MapProps> = ({
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
   const [addingMarker, setAddingMarker] = useState(false);
   const [localMarkers, setLocalMarkers] = useState<MapMarker[]>(markers);
+  const [newMarkerName, setNewMarkerName] = useState<string>('');
   
   // Cargar marcadores de localStorage si no se proporcionan
   useEffect(() => {
@@ -102,11 +104,13 @@ const Map: React.FC<MapProps> = ({
     
     // Solo agregar marcador si está dentro del mapa (0-1)
     if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
+      const markerName = newMarkerName.trim() || "Nuevo punto";
+      
       const newMarker: MapMarker = {
         id: `marker-${Date.now()}`,
         x,
         y,
-        label: "Nuevo punto",
+        label: markerName,
         type: 'location',
         discovered: true
       };
@@ -120,6 +124,11 @@ const Map: React.FC<MapProps> = ({
       
       // Desactivar modo de agregar marcador después de colocarlo
       setAddingMarker(false);
+      setNewMarkerName('');
+      
+      toast.success("Marca añadida", {
+        description: `${markerName} ha sido añadido al mapa`
+      });
     }
   };
 
@@ -127,11 +136,16 @@ const Map: React.FC<MapProps> = ({
     e.stopPropagation();
     if (!isEditable) return;
     
+    const markerToRemove = localMarkers.find(m => m.id === id);
     const updatedMarkers = localMarkers.filter(m => m.id !== id);
     setLocalMarkers(updatedMarkers);
     
     if (onMarkerRemoved) {
       onMarkerRemoved(id);
+    }
+    
+    if (markerToRemove) {
+      toast.info(`Marca "${markerToRemove.label}" eliminada`);
     }
   };
 
@@ -144,25 +158,41 @@ const Map: React.FC<MapProps> = ({
     }
   };
 
+  const resetMapView = () => {
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+    toast.info("Vista del mapa reiniciada");
+  };
+
   return (
     <Card className="border-2 border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="font-medieval">Mapa Interactivo</CardTitle>
         <div className="flex gap-2">
           {isEditable && (
-            <Button
-              variant={addingMarker ? "destructive" : "outline"} 
-              size="sm"
-              onClick={() => setAddingMarker(!addingMarker)}
-            >
-              {addingMarker ? <X className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}
-              {addingMarker ? " Cancelar" : " Añadir marca"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Nombre de la marca"
+                value={newMarkerName}
+                onChange={(e) => setNewMarkerName(e.target.value)}
+                className="p-2 text-sm border rounded-md w-40"
+              />
+              <Button
+                variant={addingMarker ? "destructive" : "outline"} 
+                size="sm"
+                onClick={() => setAddingMarker(!addingMarker)}
+              >
+                {addingMarker ? <X className="h-4 w-4 mr-1" /> : <MapPin className="h-4 w-4 mr-1" />}
+                {addingMarker ? "Cancelar" : "Añadir"}
+              </Button>
+            </div>
           )}
           <Button
             variant="outline"
             size="icon"
             onClick={() => setScale(Math.min(scale + 0.2, 3))}
+            title="Acercar"
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -170,8 +200,17 @@ const Map: React.FC<MapProps> = ({
             variant="outline"
             size="icon"
             onClick={() => setScale(Math.max(scale - 0.2, 0.5))}
+            title="Alejar"
           >
             <Minus className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={resetMapView}
+            title="Reiniciar vista"
+          >
+            <Home className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
@@ -245,6 +284,12 @@ const Map: React.FC<MapProps> = ({
               <div className="bg-black/70 text-white px-3 py-1 rounded-full text-sm">
                 Haz clic para añadir un marcador
               </div>
+            </div>
+          )}
+          
+          {scale !== 1 && (
+            <div className="absolute bottom-2 right-2 bg-white/80 dark:bg-black/80 px-2 py-1 rounded text-xs">
+              Zoom: {Math.round(scale * 100)}%
             </div>
           )}
         </div>
