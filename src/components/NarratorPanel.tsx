@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { DiceRoll, formatRollResult, performDiceRoll, DiceType } from "@/lib/dice-utils";
+import { DiceRoll, formatRollResult, performDiceRoll, DiceType, CombinedDiceRoll, formatCombinedRollResult } from "@/lib/dice-utils";
 import { Enemy, ENEMY_TYPES, createDefaultEnemy, calculateModifier } from "@/lib/character-utils";
 import { bluetoothManager, BluetoothMessage } from "@/lib/bluetooth-utils";
 import { Slider } from "@/components/ui/slider";
 import { motion } from "framer-motion";
 import { Trash2Icon } from "lucide-react";
+import CombatTracker from "./CombatTracker";
 
 interface InitiativeEntry {
   id: string;
@@ -25,13 +26,10 @@ const NarratorPanel: React.FC = () => {
   const [currentEnemy, setCurrentEnemy] = useState<Enemy | null>(null);
   const [isCreatingEnemy, setIsCreatingEnemy] = useState(false);
   const [connectedPlayers, setConnectedPlayers] = useState<string[]>([]);
-  const [initiativeOrder, setInitiativeOrder] = useState<InitiativeEntry[]>([]);
-  const [currentTurn, setCurrentTurn] = useState<number>(-1);
-  const [isCombatActive, setIsCombatActive] = useState(false);
-  const [rollHistory, setRollHistory] = useState<DiceRoll[]>([]);
+  const [rollHistory, setRollHistory] = useState<Array<DiceRoll | CombinedDiceRoll>>([]);
   const { toast } = useToast();
 
-  // Efecto para configurar el callback de mensajes de Bluetooth
+  // Set up the Bluetooth message callback
   useEffect(() => {
     if (bluetoothManager.role === 'narrator') {
       bluetoothManager.setOnMessageCallback((message) => {
@@ -44,50 +42,60 @@ const NarratorPanel: React.FC = () => {
     };
   }, []);
 
-  // Manejar mensajes recibidos por Bluetooth
+  // Handle received Bluetooth messages
   const handleBluetoothMessage = (message: BluetoothMessage) => {
     switch (message.type) {
       case 'ROLL':
-        // Añadir tirada al historial
+        // Add roll to history
         if (message.data.roll) {
           setRollHistory((prev) => [message.data.roll, ...prev]);
           toast({
-            title: `Tirada de ${message.playerName}`,
+            title: `Roll from ${message.playerName}`,
             description: formatRollResult(message.data.roll)
           });
         }
         break;
+      case 'COMBINED_ROLL':
+        // Add combined roll to history
+        if (message.data.roll) {
+          setRollHistory((prev) => [message.data.roll, ...prev]);
+          toast({
+            title: `Combined roll from ${message.playerName}`,
+            description: formatCombinedRollResult(message.data.roll)
+          });
+        }
+        break;
       case 'CHARACTER':
-        // Actualizar lista de jugadores conectados
+        // Update connected players list
         if (!connectedPlayers.includes(message.playerName)) {
           setConnectedPlayers([...connectedPlayers, message.playerName]);
         }
         break;
       default:
-        console.log("Mensaje recibido:", message);
+        console.log("Message received:", message);
     }
   };
 
-  // Crear un nuevo enemigo
+  // Create a new enemy
   const handleCreateEnemy = () => {
     setCurrentEnemy(createDefaultEnemy());
     setIsCreatingEnemy(true);
   };
 
-  // Guardar el enemigo actual
+  // Save the current enemy
   const handleSaveEnemy = () => {
     if (currentEnemy) {
       setEnemies([...enemies, currentEnemy]);
       toast({
-        title: "Enemigo creado",
-        description: `${currentEnemy.name} ha sido añadido al encuentro.`
+        title: "Enemy created",
+        description: `${currentEnemy.name} has been added to the encounter.`
       });
       setCurrentEnemy(null);
       setIsCreatingEnemy(false);
     }
   };
 
-  // Actualizar un campo del enemigo
+  // Update an enemy field
   const handleEnemyChange = (
     field: keyof Enemy,
     value: any
@@ -100,7 +108,7 @@ const NarratorPanel: React.FC = () => {
     }
   };
 
-  // Actualizar una habilidad del enemigo
+  // Update an enemy ability
   const handleEnemyAbilityChange = (ability: string, value: number) => {
     if (!currentEnemy) return;
 
@@ -115,7 +123,7 @@ const NarratorPanel: React.FC = () => {
     
     updatedModifiers[ability as keyof typeof updatedModifiers] = calculateModifier(value);
 
-    // Si hay un cambio en destreza, actualizar iniciativa
+    // If there's a change in dexterity, update initiative
     let updatedInitiative = currentEnemy.initiative;
     if (ability === 'dexterity') {
       updatedInitiative = calculateModifier(value);
@@ -129,86 +137,32 @@ const NarratorPanel: React.FC = () => {
     });
   };
 
-  // Eliminar un enemigo
+  // Delete an enemy
   const handleDeleteEnemy = (enemyId: string) => {
     const updatedEnemies = enemies.filter(enemy => enemy.id !== enemyId);
     setEnemies(updatedEnemies);
-    
-    // Si estamos en combate, actualizar iniciativa
-    if (isCombatActive) {
-      const updatedInitiative = initiativeOrder.filter(entry => entry.id !== enemyId);
-      setInitiativeOrder(updatedInitiative);
-    }
   };
 
-  // Iniciar combate y calcular iniciativa
-  const handleStartCombat = () => {
-    const initiativeEntries: InitiativeEntry[] = [];
-    
-    // Añadir enemigos
-    enemies.forEach(enemy => {
-      // Tirar iniciativa (d20 + modificador)
-      const initiativeRoll = Math.floor(Math.random() * 20) + 1 + enemy.initiative;
-      
-      initiativeEntries.push({
-        id: enemy.id,
-        name: enemy.name,
-        initiative: initiativeRoll,
-        isPlayer: false
-      });
-    });
-    
-    // Añadir jugadores conectados
-    connectedPlayers.forEach((playerName, index) => {
-      // Tirar iniciativa para jugadores
-      const initiativeRoll = Math.floor(Math.random() * 20) + 1;
-      
-      initiativeEntries.push({
-        id: `player_${index}`,
-        name: playerName,
-        initiative: initiativeRoll,
-        isPlayer: true
-      });
-    });
-    
-    // Ordenar por iniciativa (mayor a menor)
-    const orderedInitiative = initiativeEntries.sort((a, b) => b.initiative - a.initiative);
-    setInitiativeOrder(orderedInitiative);
-    setCurrentTurn(0);
-    setIsCombatActive(true);
-    
-    toast({
-      title: "¡Combate iniciado!",
-      description: `Orden de iniciativa calculado. ${orderedInitiative[0]?.name} comienza.`
-    });
+  // Handle damage applied to an enemy
+  const handleEnemyDamage = (enemyId: string, damage: number) => {
+    setEnemies(prevEnemies => 
+      prevEnemies.map(enemy => {
+        if (enemy.id === enemyId) {
+          const newCurrentHP = Math.max(0, enemy.hitPoints.current - damage);
+          return {
+            ...enemy,
+            hitPoints: {
+              ...enemy.hitPoints,
+              current: newCurrentHP
+            }
+          };
+        }
+        return enemy;
+      })
+    );
   };
 
-  // Avanzar al siguiente turno
-  const handleNextTurn = () => {
-    if (initiativeOrder.length === 0) return;
-    
-    const nextTurn = (currentTurn + 1) % initiativeOrder.length;
-    setCurrentTurn(nextTurn);
-    
-    toast({
-      title: "Siguiente turno",
-      description: `Es el turno de ${initiativeOrder[nextTurn].name}.`
-    });
-  };
-
-  // Finalizar combate
-  const handleEndCombat = () => {
-    setIsCombatActive(false);
-    setInitiativeOrder([]);
-    setCurrentTurn(-1);
-    
-    toast({
-      title: "Combate finalizado",
-      description: "El orden de iniciativa ha sido reiniciado."
-    });
-  };
-
-  // Realizar tirada para un enemigo
+  // Roll dice for an enemy
   const handleEnemyRoll = (enemyId: string, diceType: DiceType = 'd20') => {
     const enemy = enemies.find(e => e.id === enemyId);
     if (!enemy) return;
@@ -217,12 +171,12 @@ const NarratorPanel: React.FC = () => {
     setRollHistory([roll, ...rollHistory]);
     
     toast({
-      title: `Tirada de ${enemy.name}`,
+      title: `Roll from ${enemy.name}`,
       description: formatRollResult(roll)
     });
   };
 
-  // Interfaz de creación de enemigos
+  // Create/edit enemy form
   if (isCreatingEnemy && currentEnemy) {
     return (
       <motion.div
@@ -234,30 +188,30 @@ const NarratorPanel: React.FC = () => {
         <Card className="border-2 border-accent bg-white/90 dark:bg-black/20 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-2xl font-medieval text-center">
-              Crear Enemigo
+              Create Enemy
             </CardTitle>
           </CardHeader>
           
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre</Label>
+                <Label htmlFor="name">Name</Label>
                 <Input
                   id="name"
                   value={currentEnemy.name}
                   onChange={(e) => handleEnemyChange("name", e.target.value)}
-                  placeholder="Nombre del enemigo"
+                  placeholder="Name of the enemy"
                   className="font-fantasy"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Tipo</Label>
+                <Label>Type</Label>
                 <Select 
                   value={currentEnemy.type} 
                   onValueChange={(value) => handleEnemyChange("type", value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Tipo de criatura" />
+                    <SelectValue placeholder="Type of creature" />
                   </SelectTrigger>
                   <SelectContent>
                     {ENEMY_TYPES.map((type) => (
@@ -272,7 +226,7 @@ const NarratorPanel: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="challenge">Nivel de Desafío</Label>
+                <Label htmlFor="challenge">Challenge Rating</Label>
                 <Input
                   id="challenge"
                   type="number"
@@ -285,7 +239,7 @@ const NarratorPanel: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="isNPC">Tipo de PNJ</Label>
+                <Label htmlFor="isNPC">NPC Type</Label>
                 <Select
                   value={currentEnemy.isNPC ? "npc" : "enemy"}
                   onValueChange={(value) => handleEnemyChange("isNPC", value === "npc")}
@@ -294,8 +248,8 @@ const NarratorPanel: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="enemy">Enemigo</SelectItem>
-                    <SelectItem value="npc">PNJ Amistoso</SelectItem>
+                    <SelectItem value="enemy">Enemy</SelectItem>
+                    <SelectItem value="npc">Friendly NPC</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -303,7 +257,7 @@ const NarratorPanel: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="hitPoints">Puntos de vida</Label>
+                <Label htmlFor="hitPoints">Hit Points</Label>
                 <div className="flex gap-2">
                   <Input
                     id="currentHP"
@@ -319,7 +273,7 @@ const NarratorPanel: React.FC = () => {
                       })
                     }
                     className="font-fantasy w-1/2"
-                    placeholder="Actual"
+                    placeholder="Current"
                   />
                   <span className="flex items-center">/</span>
                   <Input
@@ -337,12 +291,12 @@ const NarratorPanel: React.FC = () => {
                       })
                     }
                     className="font-fantasy w-1/2"
-                    placeholder="Máximo"
+                    placeholder="Max"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="armorClass">Clase de Armadura</Label>
+                <Label htmlFor="armorClass">Armor Class</Label>
                 <Input
                   id="armorClass"
                   type="number"
@@ -356,7 +310,7 @@ const NarratorPanel: React.FC = () => {
             
             {/* Habilidades */}
             <div className="space-y-4">
-              <h3 className="font-medieval text-lg">Habilidades</h3>
+              <h3 className="font-medieval text-lg">Abilities</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'].map((ability) => {
                   const abilityKey = ability as keyof typeof currentEnemy.abilities;
@@ -399,13 +353,13 @@ const NarratorPanel: React.FC = () => {
                 setCurrentEnemy(null);
               }}
             >
-              Cancelar
+              Cancel
             </Button>
             <Button 
               onClick={handleSaveEnemy}
               className="font-medieval bg-accent text-black hover:bg-accent/90"
             >
-              Añadir Enemigo
+              Add Enemy
             </Button>
           </CardFooter>
         </Card>
@@ -416,21 +370,21 @@ const NarratorPanel: React.FC = () => {
   return (
     <Tabs defaultValue="enemies" className="w-full">
       <TabsList className="w-full mb-4">
-        <TabsTrigger value="enemies" className="flex-1">Enemigos</TabsTrigger>
-        <TabsTrigger value="combat" className="flex-1">Combate</TabsTrigger>
-        <TabsTrigger value="rolls" className="flex-1">Tiradas</TabsTrigger>
+        <TabsTrigger value="enemies" className="flex-1">Enemies</TabsTrigger>
+        <TabsTrigger value="combat" className="flex-1">Combat</TabsTrigger>
+        <TabsTrigger value="rolls" className="flex-1">Rolls</TabsTrigger>
       </TabsList>
       
       <TabsContent value="enemies" className="space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="text-xl font-medieval">
-            Enemigos y PNJs
+            Enemies and NPCs
           </h3>
           <Button 
             onClick={handleCreateEnemy}
             className="font-medieval bg-accent text-black hover:bg-accent/90"
           >
-            Crear Enemigo
+            Create Enemy
           </Button>
         </div>
         
@@ -438,7 +392,7 @@ const NarratorPanel: React.FC = () => {
           <Card className="border border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
             <CardContent className="p-6 text-center">
               <p className="text-lg font-fantasy">
-                No hay enemigos creados. ¡Crea un enemigo para el encuentro!
+                No enemies created. Create an enemy for the encounter!
               </p>
             </CardContent>
           </Card>
@@ -457,7 +411,7 @@ const NarratorPanel: React.FC = () => {
                     <CardTitle className="flex justify-between items-center">
                       <span className="font-medieval">{enemy.name}</span>
                       <span className="text-sm font-normal bg-primary/10 px-2 py-1 rounded-full">
-                        {enemy.isNPC ? 'PNJ' : 'Enemigo'} • ND {enemy.challenge}
+                        {enemy.isNPC ? 'NPC' : 'Enemy'} • CR {enemy.challenge}
                       </span>
                     </CardTitle>
                   </CardHeader>
@@ -466,21 +420,21 @@ const NarratorPanel: React.FC = () => {
                       <span className="font-bold">{enemy.type}</span>
                     </div>
 
-                    {/* Estadísticas principales */}
+                    {/* Main stats */}
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <div className="flex flex-col items-center bg-secondary/30 p-2 rounded">
-                        <span className="text-xs">PV</span>
+                        <span className="text-xs">HP</span>
                         <span className="font-bold">
                           {enemy.hitPoints.current}/{enemy.hitPoints.max}
                         </span>
                       </div>
                       <div className="flex flex-col items-center bg-secondary/30 p-2 rounded">
-                        <span className="text-xs">CA</span>
+                        <span className="text-xs">AC</span>
                         <span className="font-bold">{enemy.armorClass}</span>
                       </div>
                     </div>
 
-                    {/* Habilidades */}
+                    {/* Abilities */}
                     <div className="grid grid-cols-3 gap-1 mb-3">
                       {Object.entries(enemy.abilities).map(([key, value]) => (
                         <div key={key} className="text-center">
@@ -490,7 +444,7 @@ const NarratorPanel: React.FC = () => {
                       ))}
                     </div>
 
-                    {/* Acciones */}
+                    {/* Actions */}
                     <div className="flex justify-between mt-4">
                       <Button
                         variant="outline"
@@ -524,96 +478,28 @@ const NarratorPanel: React.FC = () => {
       </TabsContent>
       
       <TabsContent value="combat" className="space-y-4">
-        <Card className="border border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="font-medieval">Gestión de Combate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col md:flex-row gap-4 justify-between mb-4">
-              <div>
-                <h3 className="font-bold mb-2">Participantes:</h3>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {enemies.map((enemy) => (
-                    <div key={enemy.id} className="bg-secondary/30 px-2 py-1 rounded-md text-sm">
-                      {enemy.name}
-                    </div>
-                  ))}
-                  {connectedPlayers.map((player, i) => (
-                    <div key={i} className="bg-primary/20 px-2 py-1 rounded-md text-sm">
-                      {player}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                {!isCombatActive ? (
-                  <Button onClick={handleStartCombat} className="font-medieval bg-accent text-black hover:bg-accent/90">
-                    Iniciar Combate
-                  </Button>
-                ) : (
-                  <>
-                    <Button variant="outline" onClick={handleNextTurn}>
-                      Siguiente Turno
-                    </Button>
-                    <Button variant="destructive" onClick={handleEndCombat}>
-                      Finalizar Combate
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-            
-            {isCombatActive && (
-              <div className="border rounded-lg overflow-hidden">
-                <div className="bg-primary/10 p-2 font-bold text-center">
-                  Orden de Iniciativa
-                </div>
-                <ul className="divide-y">
-                  {initiativeOrder.map((entry, index) => (
-                    <li 
-                      key={entry.id} 
-                      className={`p-3 flex justify-between items-center ${index === currentTurn ? 'bg-accent/30' : ''}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold">{index + 1}.</span>
-                        <span className={entry.isPlayer ? "text-primary font-bold" : ""}>
-                          {entry.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="bg-secondary/30 px-2 py-1 rounded text-sm font-bold">
-                          {entry.initiative}
-                        </span>
-                        {index === currentTurn && (
-                          <span className="animate-pulse text-primary font-bold text-sm">
-                            Turno actual
-                          </span>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <CombatTracker 
+          enemies={enemies} 
+          connectedPlayers={connectedPlayers} 
+          onEnemyDamage={handleEnemyDamage}
+        />
       </TabsContent>
       
       <TabsContent value="rolls" className="space-y-4">
         <Card className="border border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="font-medieval">Historial de Tiradas</CardTitle>
+            <CardTitle className="font-medieval">Roll History</CardTitle>
           </CardHeader>
           <CardContent>
             {rollHistory.length === 0 ? (
               <p className="text-center italic text-muted-foreground p-4">
-                No hay tiradas registradas. Las tiradas de los jugadores y enemigos aparecerán aquí.
+                No rolls recorded. Player and enemy rolls will appear here.
               </p>
             ) : (
               <ul className="divide-y max-h-60 overflow-y-auto">
                 {rollHistory.map((roll, index) => (
                   <li key={index} className="py-2">
-                    {formatRollResult(roll)}
+                    {'diceType' in roll ? formatRollResult(roll) : formatCombinedRollResult(roll)}
                   </li>
                 ))}
               </ul>

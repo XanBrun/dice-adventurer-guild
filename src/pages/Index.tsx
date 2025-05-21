@@ -5,19 +5,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import DiceSelector from "@/components/DiceSelector";
+import MultiDiceSelector from "@/components/MultiDiceSelector";
 import DiceControls from "@/components/DiceControls";
 import RollHistory from "@/components/RollHistory";
 import DiceResult from "@/components/DiceResult";
+import CombinedDiceResult from "@/components/CombinedDiceResult";
 import CharacterList from "@/components/CharacterList";
 import NarratorPanel from "@/components/NarratorPanel";
 import BluetoothStatus from "@/components/BluetoothStatus";
 import CombatRules from "@/components/CombatRules";
 import QRCodeShare from "@/components/QRCodeShare";
-import { DiceType, DiceRoll, RollType, performDiceRoll } from "@/lib/dice-utils";
+import { 
+  DiceType, 
+  DiceRoll, 
+  RollType, 
+  performDiceRoll,
+  CombinedDiceRoll,
+  performCombinedDiceRoll,
+  DiceCombination,
+  formatRollResult,
+  formatCombinedRollResult
+} from "@/lib/dice-utils";
 import { Character } from "@/lib/character-utils";
 import { BluetoothRole, bluetoothManager } from "@/lib/bluetooth-utils";
 import { motion } from "framer-motion";
-import { MapIcon, Sword, QrCode } from "lucide-react";
+import { MapIcon, Sword, Dices as DicesIcon, MinusIcon, PlusIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useRollSounds } from "@/hooks/useRollSounds";
 
@@ -29,19 +41,22 @@ const Index = () => {
   const [rollType, setRollType] = useState<RollType>("normal");
   const [playerName, setPlayerName] = useState<string>("Aventurero");
   const [currentRoll, setCurrentRoll] = useState<DiceRoll | null>(null);
-  const [rollHistory, setRollHistory] = useState<DiceRoll[]>([]);
+  const [currentCombinedRoll, setCurrentCombinedRoll] = useState<CombinedDiceRoll | null>(null);
+  const [rollHistory, setRollHistory] = useState<Array<DiceRoll | CombinedDiceRoll>>([]); 
   const [isRolling, setIsRolling] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("dice");
+  const [diceSubTab, setDiceSubTab] = useState<string>("simple");
   const [bluetoothRole, setBluetoothRole] = useState<BluetoothRole>('none');
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const [diceCombination, setDiceCombination] = useState<DiceCombination[]>([]);
 
-  // Cargar datos guardados
+  // Load saved data
   useEffect(() => {
     try {
       const savedRolls = localStorage.getItem("diceRollHistory");
       if (savedRolls) {
         const parsedRolls = JSON.parse(savedRolls);
-        // Convertir string dates back to Date objects
+        // Convert string dates back to Date objects
         const hydratedRolls = parsedRolls.map((roll: any) => ({
           ...roll,
           timestamp: new Date(roll.timestamp)
@@ -58,7 +73,7 @@ const Index = () => {
     }
   }, []);
 
-  // Guardar tiradas cuando cambian
+  // Save rolls when they change
   useEffect(() => {
     try {
       localStorage.setItem("diceRollHistory", JSON.stringify(rollHistory));
@@ -67,16 +82,15 @@ const Index = () => {
     }
   }, [rollHistory]);
 
-  // Guardar nombre de jugador
+  // Save player name
   useEffect(() => {
     localStorage.setItem("playerName", playerName);
   }, [playerName]);
 
-  // Al seleccionar un personaje
+  // When selecting a character
   useEffect(() => {
     if (selectedCharacter) {
       setPlayerName(selectedCharacter.name);
-      // Actualizar modificadores desde el personaje si es necesario
     }
   }, [selectedCharacter]);
 
@@ -84,7 +98,7 @@ const Index = () => {
     try {
       setIsRolling(true);
       
-      // Reproducir efecto de sonido usando nuestro nuevo hook
+      // Play sound effect
       playSoundForRoll({
         id: 'temp-roll',
         diceType: selectedDice,
@@ -98,14 +112,8 @@ const Index = () => {
       });
 
       setTimeout(() => {
-        // Calcular modificador según el personaje seleccionado si es necesario
         let finalModifier = modifier;
         
-        // Si tenemos un personaje seleccionado, podríamos ajustar el modificador
-        if (selectedCharacter && selectedDice === "d20") {
-          // Ejemplo: añadir el modificador de habilidad según el contexto
-        }
-
         const roll = performDiceRoll(
           selectedDice,
           diceCount,
@@ -115,9 +123,10 @@ const Index = () => {
         );
         
         setCurrentRoll(roll);
+        setCurrentCombinedRoll(null);
         setRollHistory((prev) => [roll, ...prev]);
         
-        // Mostrar notificaciones de crítico
+        // Show notifications for critical hits
         if (selectedDice === "d20" && diceCount === 1) {
           if (roll.results[0] === 20) {
             toast.success("¡Crítico!", {
@@ -132,7 +141,7 @@ const Index = () => {
           }
         }
         
-        // Si está conectado por Bluetooth, enviar la tirada
+        // If connected via Bluetooth, send the roll
         if (bluetoothManager.isConnected) {
           bluetoothManager.sendMessage({
             type: 'ROLL',
@@ -153,17 +162,89 @@ const Index = () => {
     }
   };
 
-  const handleReroll = (roll: DiceRoll) => {
-    setSelectedDice(roll.diceType);
-    setDiceCount(roll.count);
-    setModifier(roll.modifier);
-    setRollType(roll.rollType);
-    handleDiceRoll();
+  const handleCombinedDiceRoll = () => {
+    try {
+      // Check if any dice are selected
+      if (diceCombination.length === 0 || diceCombination.every(d => d.count === 0)) {
+        toast.error("Selecciona al menos un dado", {
+          description: "Debes seleccionar al menos un dado para realizar una tirada combinada"
+        });
+        return;
+      }
+
+      setIsRolling(true);
+      
+      // Play sound effect - use the first dice type for now
+      const firstDice = diceCombination[0];
+      if (firstDice) {
+        playSoundForRoll({
+          id: 'temp-roll',
+          diceType: firstDice.diceType,
+          count: firstDice.count,
+          modifier: modifier,
+          rollType: 'normal',
+          results: [],
+          total: 0,
+          timestamp: new Date(),
+          playerName: playerName
+        });
+      }
+
+      setTimeout(() => {
+        const roll = performCombinedDiceRoll(
+          diceCombination,
+          modifier,
+          'normal',
+          playerName || "Aventurero"
+        );
+        
+        setCurrentCombinedRoll(roll);
+        setCurrentRoll(null);
+        setRollHistory((prev) => [roll, ...prev]);
+        
+        // If connected via Bluetooth, send the roll
+        if (bluetoothManager.isConnected) {
+          bluetoothManager.sendMessage({
+            type: 'COMBINED_ROLL',
+            playerId: 'local-player',
+            playerName: playerName,
+            data: { roll }
+          });
+        }
+        
+        setIsRolling(false);
+      }, 700);
+    } catch (error) {
+      console.error("Error rolling dice:", error);
+      toast.error("Error al tirar los dados", {
+        description: error instanceof Error ? error.message : "Error desconocido",
+      });
+      setIsRolling(false);
+    }
+  };
+
+  const handleReroll = (roll: DiceRoll | CombinedDiceRoll) => {
+    if ('diceType' in roll) {
+      // Regular dice roll
+      setSelectedDice(roll.diceType);
+      setDiceCount(roll.count);
+      setModifier(roll.modifier);
+      setRollType(roll.rollType);
+      setDiceSubTab("simple");
+      handleDiceRoll();
+    } else {
+      // Combined dice roll
+      setDiceCombination(roll.dice);
+      setModifier(roll.modifier);
+      setDiceSubTab("combined");
+      handleCombinedDiceRoll();
+    }
   };
 
   const handleClearHistory = () => {
     setRollHistory([]);
     setCurrentRoll(null);
+    setCurrentCombinedRoll(null);
     localStorage.removeItem("diceRollHistory");
     toast.info("Historial de tiradas borrado");
   };
@@ -217,36 +298,115 @@ const Index = () => {
                 <Card className="border-2 border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
                   <CardHeader>
                     <CardTitle className="text-center font-medieval">Elige tus Dados</CardTitle>
+                    
+                    <Tabs value={diceSubTab} onValueChange={setDiceSubTab} className="mt-4">
+                      <TabsList className="grid grid-cols-2 w-full">
+                        <TabsTrigger value="simple" className="flex items-center gap-2">
+                          <DicesIcon className="h-4 w-4" />
+                          <span>Dados Simples</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="combined" className="flex items-center gap-2">
+                          <DicesIcon className="h-4 w-4" />
+                          <span>Dados Combinados</span>
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
                   </CardHeader>
                   <CardContent>
-                    <DiceSelector
-                      selectedDice={selectedDice}
-                      onChange={setSelectedDice}
-                    />
+                    {diceSubTab === "simple" ? (
+                      <>
+                        <DiceSelector
+                          selectedDice={selectedDice}
+                          onChange={setSelectedDice}
+                        />
 
-                    <div className="mt-6">
-                      <DiceControls
-                        count={diceCount}
-                        setCount={setDiceCount}
-                        modifier={modifier}
-                        setModifier={setModifier}
-                        rollType={rollType}
-                        setRollType={setRollType}
-                        playerName={playerName}
-                        setPlayerName={setPlayerName}
-                        onRoll={handleDiceRoll}
-                      />
-                    </div>
+                        <div className="mt-6">
+                          <DiceControls
+                            count={diceCount}
+                            setCount={setDiceCount}
+                            modifier={modifier}
+                            setModifier={setModifier}
+                            rollType={rollType}
+                            setRollType={setRollType}
+                            playerName={playerName}
+                            setPlayerName={setPlayerName}
+                            onRoll={handleDiceRoll}
+                          />
+                        </div>
 
-                    <motion.div 
-                      className="dice-container mt-6" 
-                      animate={{ rotate: isRolling ? [0, 15, -15, 10, -5, 0] : 0 }}
-                      transition={{ duration: 0.7 }}
-                    >
-                      {currentRoll && (
-                        <DiceResult roll={currentRoll} />
-                      )}
-                    </motion.div>
+                        <motion.div 
+                          className="dice-container mt-6" 
+                          animate={{ rotate: isRolling ? [0, 15, -15, 10, -5, 0] : 0 }}
+                          transition={{ duration: 0.7 }}
+                        >
+                          {currentRoll && (
+                            <DiceResult roll={currentRoll} />
+                          )}
+                        </motion.div>
+                      </>
+                    ) : (
+                      <>
+                        <MultiDiceSelector
+                          selectedDiceCombination={diceCombination}
+                          onChange={setDiceCombination}
+                        />
+                        
+                        <div className="mt-6 flex flex-col space-y-4">
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                              <label className="text-sm font-medieval">Nombre del Jugador</label>
+                              <input
+                                type="text"
+                                value={playerName}
+                                onChange={(e) => setPlayerName(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="text-sm font-medieval">Modificador</label>
+                              <div className="flex items-center space-x-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setModifier(modifier - 1)}
+                                >
+                                  <MinusIcon className="h-4 w-4" />
+                                </Button>
+                                <div className="w-10 text-center font-bold">
+                                  {modifier >= 0 ? `+${modifier}` : modifier}
+                                </div>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setModifier(modifier + 1)}
+                                >
+                                  <PlusIcon className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            onClick={handleCombinedDiceRoll} 
+                            className="w-full font-medieval bg-accent text-black hover:bg-accent/90 text-lg"
+                            disabled={diceCombination.length === 0 || diceCombination.every(d => d.count === 0)}
+                          >
+                            Roll Combined Dice!
+                          </Button>
+                        </div>
+                        
+                        <motion.div 
+                          className="dice-container mt-6" 
+                          animate={{ rotate: isRolling ? [0, 15, -15, 10, -5, 0] : 0 }}
+                          transition={{ duration: 0.7 }}
+                        >
+                          {currentCombinedRoll && (
+                            <CombinedDiceResult roll={currentCombinedRoll} />
+                          )}
+                        </motion.div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               </div>

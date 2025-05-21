@@ -15,6 +15,22 @@ export type DiceRoll = {
   playerName: string;
 };
 
+export type DiceCombination = {
+  diceType: DiceType;
+  count: number;
+};
+
+export type CombinedDiceRoll = {
+  id: string;
+  dice: DiceCombination[];
+  modifier: number;
+  rollType: RollType;
+  results: {diceType: DiceType, values: number[]}[];
+  total: number;
+  timestamp: Date;
+  playerName: string;
+};
+
 export type DiceSet = {
   type: DiceType;
   sides: number;
@@ -85,10 +101,74 @@ export const performDiceRoll = (
   };
 };
 
+export const performCombinedDiceRoll = (
+  dice: DiceCombination[],
+  modifier: number,
+  rollType: RollType,
+  playerName: string
+): CombinedDiceRoll => {
+  const results: {diceType: DiceType, values: number[]}[] = [];
+  let total = modifier;
+
+  // Roll each type of dice
+  for (const diceItem of dice) {
+    if (diceItem.count <= 0) continue;
+    
+    const diceSet = DICE_SETS.find((d) => d.type === diceItem.diceType);
+    if (!diceSet) {
+      throw new Error(`Invalid dice type: ${diceItem.diceType}`);
+    }
+
+    const values: number[] = [];
+    for (let i = 0; i < diceItem.count; i++) {
+      const roll = rollDice(diceSet.sides);
+      values.push(roll);
+      total += roll;
+    }
+
+    results.push({
+      diceType: diceItem.diceType,
+      values
+    });
+  }
+
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    dice,
+    modifier,
+    rollType,
+    results,
+    total,
+    timestamp: new Date(),
+    playerName
+  };
+};
+
 export const formatRollResult = (roll: DiceRoll): string => {
   const modifierText = roll.modifier > 0 ? `+${roll.modifier}` : roll.modifier < 0 ? `${roll.modifier}` : '';
   const diceText = `${roll.count}${roll.diceType}${modifierText}`;
   const rollTypeText = roll.rollType !== 'normal' ? ` (${roll.rollType})` : '';
   
   return `${roll.playerName} rolled ${diceText}${rollTypeText}: [${roll.results.join(', ')}]${modifierText} = ${roll.total}`;
+};
+
+export const formatCombinedRollResult = (roll: CombinedDiceRoll): string => {
+  const modifierText = roll.modifier > 0 ? `+${roll.modifier}` : roll.modifier < 0 ? `${roll.modifier}` : '';
+  
+  let diceText = roll.dice
+    .filter(d => d.count > 0)
+    .map(d => `${d.count}${d.type}`)
+    .join(' + ');
+    
+  const rollTypeText = roll.rollType !== 'normal' ? ` (${roll.rollType})` : '';
+  
+  let resultsText = roll.results
+    .map(r => `${r.diceType}[${r.values.join(', ')}]`)
+    .join(' + ');
+    
+  if (roll.modifier !== 0) {
+    resultsText += modifierText;
+  }
+  
+  return `${roll.playerName} rolled ${diceText}${rollTypeText}: ${resultsText} = ${roll.total}`;
 };

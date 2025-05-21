@@ -1,17 +1,15 @@
 
 import React from "react";
-import { DiceRoll, formatRollResult } from "@/lib/dice-utils";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2Icon, VolumeIcon, Volume2Icon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useRollSounds } from "@/hooks/useRollSounds";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "./ui/button";
+import { ScrollArea } from "./ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { RefreshCcw, Trash2 } from "lucide-react";
+import { DiceRoll, CombinedDiceRoll, formatRollResult, formatCombinedRollResult } from "@/lib/dice-utils";
 
 interface RollHistoryProps {
-  rolls: DiceRoll[];
-  onReroll: (roll: DiceRoll) => void;
-  onClearHistory: () => void;
+  rolls: Array<DiceRoll | CombinedDiceRoll>;
+  onReroll?: (roll: DiceRoll | CombinedDiceRoll) => void;
+  onClearHistory?: () => void;
 }
 
 const RollHistory: React.FC<RollHistoryProps> = ({
@@ -19,100 +17,103 @@ const RollHistory: React.FC<RollHistoryProps> = ({
   onReroll,
   onClearHistory,
 }) => {
-  const { playSoundForRoll, isSoundEnabled, toggleSound } = useRollSounds();
-  
+  if (!rolls || rolls.length === 0) {
+    return (
+      <div className="text-center italic text-muted-foreground py-10">
+        No hay tiradas previas
+      </div>
+    );
+  }
+
+  const formatTimeAgo = (timestamp: Date) => {
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000);
+
+    if (seconds < 60) return `Hace ${seconds} seg`;
+    if (seconds < 3600) return `Hace ${Math.floor(seconds / 60)} min`;
+    if (seconds < 86400) return `Hace ${Math.floor(seconds / 3600)} h`;
+    return `Hace ${Math.floor(seconds / 86400)} d`;
+  };
+
+  const formatRoll = (roll: DiceRoll | CombinedDiceRoll): string => {
+    if ('diceType' in roll) {
+      return formatRollResult(roll);
+    } else {
+      return formatCombinedRollResult(roll);
+    }
+  };
+
   return (
-    <div className="mt-4 space-y-2">
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-medieval">Historial</h3>
-        <div className="flex space-x-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleSound}
-                  className="text-primary hover:text-primary/80"
-                >
-                  {isSoundEnabled ? (
-                    <Volume2Icon className="h-4 w-4" />
-                  ) : (
-                    <VolumeIcon className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{isSoundEnabled ? "Desactivar sonidos" : "Activar sonidos"}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          {rolls.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClearHistory}
-              className="text-red-500 hover:text-red-700"
-            >
-              <Trash2Icon className="h-4 w-4 mr-2" /> Limpiar
-            </Button>
-          )}
-        </div>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-sm font-fantasy">Historial de Tiradas</h3>
+        {onClearHistory && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-muted-foreground"
+                onClick={onClearHistory}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Borrar historial</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
-      
-      <div className="border rounded-md overflow-hidden bg-white/70 dark:bg-black/20 backdrop-blur-sm">
-        <ScrollArea className="h-48 p-4">
-          {rolls.length === 0 ? (
-            <p className="text-center italic text-muted-foreground">¡Tira los dados para empezar!</p>
-          ) : (
-            <ul className="space-y-2">
-              {rolls.map((roll) => {
-                const isCritical = roll.diceType === 'd20' && roll.count === 1 && roll.results[0] === 20;
-                const isFail = roll.diceType === 'd20' && roll.count === 1 && roll.results[0] === 1;
-                
-                return (
-                  <li 
-                    key={roll.id} 
-                    className={cn(
-                      "p-2 rounded flex justify-between items-center bg-white/60 dark:bg-black/20 transition-colors",
-                      isCritical ? "bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300" : 
-                      isFail ? "bg-red-100 dark:bg-red-900/30 border border-red-300" : 
-                      ""
-                    )}
-                  >
-                    <span className={cn(
-                      "font-fantasy",
-                      isCritical ? "text-yellow-700 dark:text-yellow-400" : 
-                      isFail ? "text-red-700 dark:text-red-400" : 
-                      ""
-                    )}>
-                      {formatRollResult(roll)}
-                    </span>
-                    <div className="flex space-x-1">
-                      <Button
-                        onClick={() => playSoundForRoll(roll)}
-                        variant="ghost"
-                        size="sm"
-                        className="p-1 h-8 w-8"
-                      >
-                        <Volume2Icon className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        onClick={() => onReroll(roll)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        Repetir
-                      </Button>
+
+      <ScrollArea className="h-[400px] rounded-md border">
+        <div className="p-4 space-y-3">
+          {rolls.map((roll, index) => {
+            // Determine if this is a standard roll or combined roll
+            const isStandardRoll = 'diceType' in roll;
+            
+            // For standard rolls
+            const diceType = isStandardRoll ? (roll as DiceRoll).diceType : 'combined';
+            const count = isStandardRoll ? (roll as DiceRoll).count : 'multiple';
+            
+            return (
+              <div
+                key={roll.id || index}
+                className="bg-white/50 dark:bg-black/10 rounded-md p-2 text-sm hover:bg-accent/5 transition-colors"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-bold">{roll.playerName}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {formatTimeAgo(new Date(roll.timestamp))}
                     </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </ScrollArea>
-      </div>
+                  </div>
+                  {onReroll && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => onReroll(roll)}
+                        >
+                          <RefreshCcw className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Repetir tirada</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+                <div className="mt-1">
+                  {formatRoll(roll)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </ScrollArea>
     </div>
   );
 };
