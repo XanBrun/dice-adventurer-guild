@@ -3,34 +3,38 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { User, UserPlus, Dice, MessageSquare } from "lucide-react";
+import { User, UserPlus, DicesIcon, MessageSquare } from "lucide-react";
 import CombatTracker from "@/components/CombatTracker";
-import { Player } from "@/lib/character-utils";
+import { Character } from "@/lib/character-utils";
 import { useRollSounds } from "@/hooks/useRollSounds";
 import { DiceType, RollHistoryItem } from "@/lib/dice-utils";
 import { motion } from "framer-motion";
 
+interface Player extends Character {} // Type alias to match the required prop type
+
 interface NarratorPanelProps {
   players: Player[];
-  onRollDice: (diceType: DiceType, count: number, modifier?: number, reason?: string) => void;
-  onCombinedRoll: (diceCombinations: { diceType: string; count: number }[], modifier?: number, reason?: string) => void;
-  rollHistory: RollHistoryItem[];
+  onRollDice?: (diceType: DiceType, count: number, modifier?: number, reason?: string) => void;
+  onCombinedRoll?: (diceCombinations: { diceType: string; count: number }[], modifier?: number, reason?: string) => void;
+  rollHistory?: RollHistoryItem[];
 }
 
 type TabType = "ROLL" | "CHARACTER" | "ENEMY" | "CHAT" | "SYSTEM";
 
 const NarratorPanel: React.FC<NarratorPanelProps> = ({
-  players,
+  players = [],
   onRollDice,
   onCombinedRoll,
-  rollHistory
+  rollHistory = []
 }) => {
   const [selectedTab, setSelectedTab] = useState<TabType>("CHARACTER");
   const { playSound } = useRollSounds();
 
   const handleRoll = (type: DiceType, count: number, modifier: number = 0) => {
     playSound(type);
-    onRollDice(type, count, modifier, "Narrador");
+    if (onRollDice) {
+      onRollDice(type, count, modifier, "Narrador");
+    }
   };
 
   return (
@@ -50,7 +54,7 @@ const NarratorPanel: React.FC<NarratorPanelProps> = ({
               Combate
             </TabsTrigger>
             <TabsTrigger value="ROLL" className="text-xs sm:text-sm">
-              <Dice className="h-4 w-4 mr-1 hidden sm:block" />
+              <DicesIcon className="h-4 w-4 mr-1 hidden sm:block" />
               Tiradas
             </TabsTrigger>
             <TabsTrigger value="CHAT" className="text-xs sm:text-sm">

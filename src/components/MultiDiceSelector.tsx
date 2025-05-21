@@ -52,7 +52,7 @@ const MultiDiceSelector: React.FC<MultiDiceSelectorProps> = ({
           <div 
             key={dice.type} 
             className={`p-2 border rounded-md flex flex-col items-center ${
-              getDiceCount(dice.type) > 0 ? 'border-accent bg-accent/10' : 'border-gray-300'
+              getDiceCount(dice.type as DiceType) > 0 ? 'border-accent bg-accent/10' : 'border-gray-300'
             }`}
           >
             <div className="text-lg font-bold">{dice.type}</div>
@@ -62,18 +62,18 @@ const MultiDiceSelector: React.FC<MultiDiceSelectorProps> = ({
                 variant="outline" 
                 size="sm" 
                 className="h-8 w-8 p-0"
-                onClick={() => updateDiceCount(dice.type, false)}
+                onClick={() => updateDiceCount(dice.type as DiceType, false)}
               >
                 <MinusIcon className="h-4 w-4" />
               </Button>
               
-              <span className="font-bold text-lg">{getDiceCount(dice.type)}</span>
+              <span className="font-bold text-lg">{getDiceCount(dice.type as DiceType)}</span>
               
               <Button 
                 variant="outline" 
                 size="sm" 
                 className="h-8 w-8 p-0"
-                onClick={() => updateDiceCount(dice.type, true)}
+                onClick={() => updateDiceCount(dice.type as DiceType, true)}
               >
                 <PlusIcon className="h-4 w-4" />
               </Button>

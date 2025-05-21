@@ -27,7 +27,7 @@ const RollHistory: React.FC<RollHistoryProps> = ({
 
   const formatTimeAgo = (timestamp: Date) => {
     const now = new Date();
-    const seconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000);
+    const seconds = Math.floor((now.getTime() - new Date(timestamp).getTime()) / 1000);
 
     if (seconds < 60) return `Hace ${seconds} seg`;
     if (seconds < 3600) return `Hace ${Math.floor(seconds / 60)} min`;
@@ -71,10 +71,6 @@ const RollHistory: React.FC<RollHistoryProps> = ({
           {rolls.map((roll, index) => {
             // Determine if this is a standard roll or combined roll
             const isStandardRoll = 'diceType' in roll;
-            
-            // For standard rolls
-            const diceType = isStandardRoll ? (roll as DiceRoll).diceType : 'combined';
-            const count = isStandardRoll ? (roll as DiceRoll).count : 'multiple';
             
             return (
               <div

@@ -7,19 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sword, Shield, Activity, SkipForward, Plus, Trash2, RefreshCw } from "lucide-react";
+import { Sword, Shield, Activity, SkipForward, Plus, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Player, generateRandomId, calculateModifier } from "@/lib/character-utils";
-import { Enemy, CombatAction, CombatTurn, rollInitiative } from "@/lib/combat-utils";
+import { Character } from "@/lib/character-utils";
+import { Enemy, CombatTurn, CombatAction, CombatActionType, rollInitiative, createEnemy } from "@/lib/combat-utils";
 import { toast } from "@/components/ui/sonner";
+import { generateRandomId } from "@/lib/dice-utils";
 
 interface CombatTrackerProps {
-  players: Player[];
+  players: Character[];
   enemies?: Enemy[];
 }
 
 const CombatTracker: React.FC<CombatTrackerProps> = ({ players, enemies = [] }) => {
-  const [combatants, setCombatants] = useState<(Player | Enemy)[]>([]);
+  const [combatants, setCombatants] = useState<(Character | Enemy)[]>([]);
   const [turns, setTurns] = useState<CombatTurn[]>([]);
   const [currentTurnIndex, setCurrentTurnIndex] = useState<number>(0);
   const [currentRound, setCurrentRound] = useState<number>(1);
@@ -123,17 +124,7 @@ const CombatTracker: React.FC<CombatTrackerProps> = ({ players, enemies = [] }) 
 
     const hp = parseInt(newEnemyHP) || 10;
     
-    const newEnemy: Enemy = {
-      id: generateRandomId(),
-      name: newEnemyName.trim(),
-      stats: {
-        hp: hp,
-        maxHp: hp,
-        ac: 10,
-        initiative: 0
-      },
-      attacks: []
-    };
+    const newEnemy = createEnemy(newEnemyName.trim(), hp);
 
     setCustomEnemies(prev => [...prev, newEnemy]);
     setCombatants(prev => [...prev, newEnemy]);
@@ -184,7 +175,7 @@ const CombatTracker: React.FC<CombatTrackerProps> = ({ players, enemies = [] }) 
                           <div className="flex-1">
                             <div className="font-bold">{player.name}</div>
                             <div className="text-xs text-muted-foreground">
-                              Iniciativa: {calculateModifier(player.attributes.dexterity)}
+                              Iniciativa: {Math.floor((player.attributes.dexterity - 10) / 2)}
                             </div>
                           </div>
                           <Badge variant="outline">
@@ -333,7 +324,7 @@ const CombatTracker: React.FC<CombatTrackerProps> = ({ players, enemies = [] }) 
                   <Button
                     variant="secondary"
                     onClick={() => handleAddAction({
-                      type: 'attack',
+                      type: "attack" as CombatActionType,
                       description: 'Realizó un ataque',
                       timestamp: new Date()
                     })}
@@ -346,7 +337,7 @@ const CombatTracker: React.FC<CombatTrackerProps> = ({ players, enemies = [] }) 
                   <Button
                     variant="secondary"
                     onClick={() => handleAddAction({
-                      type: 'defend',
+                      type: "defend" as CombatActionType,
                       description: 'Tomó posición defensiva',
                       timestamp: new Date()
                     })}
@@ -359,7 +350,7 @@ const CombatTracker: React.FC<CombatTrackerProps> = ({ players, enemies = [] }) 
                   <Button
                     variant="secondary"
                     onClick={() => handleAddAction({
-                      type: 'skill',
+                      type: "skill" as CombatActionType,
                       description: 'Usó una habilidad especial',
                       timestamp: new Date()
                     })}
