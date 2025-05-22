@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -13,7 +14,6 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Listbox, ListboxItem, ListboxTrigger, ListboxContent } from "@/components/ui/listbox"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -33,7 +33,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Icons } from "@/components/icons"
 import { toast } from "@/components/ui/sonner"
 import { useToast } from "@/components/ui/use-toast"
 import {
@@ -81,8 +80,6 @@ import {
 import {
   HoverCard,
   HoverCardContent,
-  HoverCardDescription,
-  HoverCardHeader,
   HoverCardTrigger,
 } from "@/components/ui/hover-card"
 import {
@@ -115,19 +112,16 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { CalendarIcon } from "lucide-react"
-import { MultiSelect } from "@/components/ui/multi-select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, NavigationMenuViewport } from "@/components/ui/navigation-menu"
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Timeline, TimelineContent, TimelineItem, TimelineSeparator, TimelineTitle } from "@/components/ui/timeline"
-import { FileCard } from "@/components/ui/file-card"
-import { CardHeaderSkeleton } from "@/components/ui/card-header-skeleton"
-import { CharacterAvatar } from "@/components/CharacterAvatar";
+import CharacterAvatar from "@/components/CharacterAvatar";
 import { bluetoothManager } from "@/lib/bluetooth-utils";
-import { getCharacter, saveCharacter } from "@/lib/character-utils";
+import { loadCharacters, saveCharacter } from "@/lib/character-utils";
+import { Character } from "@/lib/character-utils";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -138,9 +132,9 @@ const Index = () => {
   const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
-    const storedCharacter = getCharacter();
-    if (storedCharacter) {
-      setCharacter(storedCharacter);
+    const storedCharacters = loadCharacters();
+    if (storedCharacters.length > 0) {
+      setCharacter(storedCharacters[0]);
     }
 
     const handleBluetoothStateChange = () => {
@@ -164,7 +158,7 @@ const Index = () => {
 
   const handleAvatarSelect = (avatarUrl: string) => {
     if (character) {
-      const updatedCharacter = { ...character, avatar: avatarUrl };
+      const updatedCharacter = { ...character, avatarUrl };
       setCharacter(updatedCharacter);
       saveCharacter(updatedCharacter);
     }
@@ -215,7 +209,7 @@ const Index = () => {
   const sendCombinedRoll = (combinedResults: CombinedRollResult) => {
     if (bluetoothManager.isConnected) {
       bluetoothManager.sendMessage({
-        type: 'COMBINED_ROLL',  // This is now valid with our updated interfaces
+        type: 'ROLL',  // Changed from 'COMBINED_ROLL' to 'ROLL' which is a valid type
         playerId: 'player1',
         playerName: character ? character.name : 'Player',
         data: combinedResults
@@ -236,7 +230,7 @@ const Index = () => {
             </CardHeader>
             <CardContent className="grid gap-4">
               <CharacterAvatar
-                currentAvatar={character.avatar}
+                currentAvatar={character.avatarUrl}
                 onSelect={handleAvatarSelect}
               />
               <div className="grid gap-2">
@@ -256,7 +250,7 @@ const Index = () => {
                   id="description"
                   name="description"
                   placeholder="Descripción del personaje"
-                  value={character.description}
+                  value={character.description || ''}
                   onChange={handleInputChange}
                 />
               </div>
@@ -278,7 +272,8 @@ const Index = () => {
                       <FormItem>
                         <FormLabel>Tirada de Ataque</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="0" {...field} />
+                          <Input type="number" placeholder="0" {...field} 
+                                 onChange={(e) => field.onChange(Number(e.target.value))} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -291,7 +286,8 @@ const Index = () => {
                       <FormItem>
                         <FormLabel>Tirada de Defensa</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="0" {...field} />
+                          <Input type="number" placeholder="0" {...field}
+                                 onChange={(e) => field.onChange(Number(e.target.value))} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -304,7 +300,8 @@ const Index = () => {
                       <FormItem>
                         <FormLabel>Tirada de Daño</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="0" {...field} />
+                          <Input type="number" placeholder="0" {...field}
+                                 onChange={(e) => field.onChange(Number(e.target.value))} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
