@@ -1,351 +1,204 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { Progress } from "@/components/ui/progress"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Checkbox } from "@/components/ui/checkbox"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, CommandShortcut } from "@/components/ui/command"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Home } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { toast } from "@/components/ui/sonner"
-import { useToast } from "@/components/ui/use-toast"
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card"
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu"
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { CalendarIcon } from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
-import { AspectRatio } from "@/components/ui/aspect-ratio"
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
-import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, NavigationMenuViewport } from "@/components/ui/navigation-menu"
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import CharacterAvatar from "@/components/CharacterAvatar";
-import { bluetoothManager } from "@/lib/bluetooth-utils";
-import { loadCharacters, saveCharacter } from "@/lib/character-utils";
-import { Character } from "@/lib/character-utils";
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Dices, Users, Crown, Map } from "lucide-react";
+import { motion } from "framer-motion";
+import DiceSelector from "@/components/DiceSelector";
+import DiceControls from "@/components/DiceControls";
+import DiceResult from "@/components/DiceResult";
+import RollHistory from "@/components/RollHistory";
+import MultiDiceSelector from "@/components/MultiDiceSelector";
+import CharacterList from "@/components/CharacterList";
+import NarratorPanel from "@/components/NarratorPanel";
+import CombatRules from "@/components/CombatRules";
+import CombatTracker from "@/components/CombatTracker";
+import { useRollSounds } from "@/hooks/useRollSounds";
+import { Character, loadCharacters } from "@/lib/character-utils";
+import { DiceType, RollType, DiceCombination, performDiceRoll, performCombinedDiceRoll } from "@/lib/dice-utils";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [character, setCharacter] = useState<Character | null>(null);
-  const [isBluetoothAvailable, setIsBluetoothAvailable] = useState(bluetoothManager.isAvailable);
-  const [isBluetoothConnected, setIsBluetoothConnected] = useState(bluetoothManager.isConnected);
-  const [bluetoothRole, setBluetoothRole] = useState(bluetoothManager.role);
-  const [isSearching, setIsSearching] = useState(false);
+  const [selectedDice, setSelectedDice] = useState<DiceType>('d20');
+  const [diceCount, setDiceCount] = useState(1);
+  const [modifier, setModifier] = useState(0);
+  const [rollType, setRollType] = useState<RollType>("normal");
+  const [playerName, setPlayerName] = useState("Aventurero");
+  const [rollHistory, setRollHistory] = useState<any[]>([]);
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const [diceCombination, setDiceCombination] = useState<DiceCombination[]>([]);
+  const { playSound, playSoundForRoll, isSoundEnabled, toggleSound } = useRollSounds();
 
   useEffect(() => {
-    const storedCharacters = loadCharacters();
-    if (storedCharacters.length > 0) {
-      setCharacter(storedCharacters[0]);
+    const characters = loadCharacters();
+    if (characters.length > 0) {
+      setSelectedCharacter(characters[0]);
+      setPlayerName(characters[0].name);
     }
-
-    const handleBluetoothStateChange = () => {
-      setIsBluetoothAvailable(bluetoothManager.isAvailable);
-      setIsBluetoothConnected(bluetoothManager.isConnected);
-      setBluetoothRole(bluetoothManager.role);
-    };
-
-    const handleSearchingStateChange = (searching: boolean) => {
-      setIsSearching(searching);
-    };
-
-    bluetoothManager.setOnConnectionChangeCallback(handleBluetoothStateChange);
-    bluetoothManager.setOnSearchingCallback(handleSearchingStateChange);
-
-    return () => {
-      bluetoothManager.setOnConnectionChangeCallback(null);
-      bluetoothManager.setOnSearchingCallback(null);
-    };
   }, []);
 
-  const handleAvatarSelect = (avatarUrl: string) => {
-    if (character) {
-      const updatedCharacter = { ...character, avatarUrl };
-      setCharacter(updatedCharacter);
-      saveCharacter(updatedCharacter);
+  const handleRoll = () => {
+    const roll = performDiceRoll(selectedDice, diceCount, modifier, rollType, playerName);
+    playSoundForRoll(roll);
+    setRollHistory(prev => [roll, ...prev]);
+  };
+
+  const handleCombinedRoll = () => {
+    if (diceCombination.length === 0) return;
+    
+    const roll = performCombinedDiceRoll(diceCombination, modifier, rollType, playerName);
+    diceCombination.forEach(dice => playSound(dice.diceType));
+    setRollHistory(prev => [roll, ...prev]);
+  };
+
+  const handleReroll = (roll: any) => {
+    if ('diceType' in roll) {
+      // Single dice roll
+      const newRoll = performDiceRoll(roll.diceType, roll.count, roll.modifier, roll.rollType, roll.playerName);
+      playSoundForRoll(newRoll);
+      setRollHistory(prev => [newRoll, ...prev]);
+    } else {
+      // Combined roll
+      const newRoll = performCombinedDiceRoll(roll.dice, roll.modifier, roll.rollType, roll.playerName);
+      roll.dice.forEach((dice: DiceCombination) => playSound(dice.diceType));
+      setRollHistory(prev => [newRoll, ...prev]);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    if (character) {
-      const updatedCharacter = { ...character, [name]: value };
-      setCharacter(updatedCharacter);
-      saveCharacter(updatedCharacter);
-    }
-  };
-
-  const handleStartNarrator = async () => {
-    await bluetoothManager.startAsNarrator();
-  };
-
-  const handleConnectPlayer = async () => {
-    await bluetoothManager.connectAsPlayer();
-  };
-
-  const handleDisconnect = () => {
-    bluetoothManager.disconnect();
-  };
-
-  const CombinedRollSchema = z.object({
-    attackRoll: z.number(),
-    defenseRoll: z.number(),
-    damageRoll: z.number(),
-  });
-
-  type CombinedRollResult = z.infer<typeof CombinedRollSchema>;
-
-  const form = useForm<CombinedRollResult>({
-    resolver: zodResolver(CombinedRollSchema),
-    defaultValues: {
-      attackRoll: 0,
-      defenseRoll: 0,
-      damageRoll: 0,
-    },
-  });
-
-  const onSubmit = (values: CombinedRollResult) => {
-    sendCombinedRoll(values);
-  };
-
-  const sendCombinedRoll = (combinedResults: CombinedRollResult) => {
-    if (bluetoothManager.isConnected) {
-      bluetoothManager.sendMessage({
-        type: 'ROLL',
-        playerId: 'player1',
-        playerName: character ? character.name : 'Player',
-        data: combinedResults
-      });
-    }
+  const handleCharacterSelect = (character: Character) => {
+    setSelectedCharacter(character);
+    setPlayerName(character.name);
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <Button variant="home" size="sm" onClick={() => navigate("/")} asChild>
-          <Link to="/">
-            <Home className="mr-1" />
-            Volver al inicio
-          </Link>
-        </Button>
-      </div>
-
-      {character ? (
-        <div className="flex flex-col md:flex-row gap-4">
-          <Card className="w-full md:w-1/3">
-            <CardHeader>
-              <CardTitle>Perfil del Personaje</CardTitle>
-              <CardDescription>Información básica del personaje.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <CharacterAvatar
-                currentAvatar={character.avatarUrl}
-                onSelect={handleAvatarSelect}
-              />
-              <div className="grid gap-2">
-                <Label htmlFor="name">Nombre</Label>
-                <Input
-                  type="text"
-                  id="name"
-                  name="name"
-                  placeholder="Nombre del personaje"
-                  value={character.name}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="description">Descripción</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  placeholder="Descripción del personaje"
-                  value={character.description || ''}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="w-full md:w-2/3">
-            <CardHeader>
-              <CardTitle>Tiradas Combinadas</CardTitle>
-              <CardDescription>Realiza tiradas de ataque, defensa y daño.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="attackRoll"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tirada de Ataque</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="0" {...field} 
-                                 onChange={(e) => field.onChange(Number(e.target.value))} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="defenseRoll"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tirada de Defensa</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="0" {...field}
-                                 onChange={(e) => field.onChange(Number(e.target.value))} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="damageRoll"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tirada de Daño</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="0" {...field}
-                                 onChange={(e) => field.onChange(Number(e.target.value))} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit">Enviar Tirada Combinada</Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        <p>No se encontró información del personaje.</p>
-      )}
-
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-2">Bluetooth</h2>
-        <p>Estado: {isBluetoothAvailable ? 'Disponible' : 'No disponible'}</p>
-        <p>Conexión: {isBluetoothConnected ? 'Conectado' : 'Desconectado'}</p>
-        <p>Rol: {bluetoothRole}</p>
-
-        {!isBluetoothConnected && (
-          <div className="flex gap-2">
-            <Button onClick={handleStartNarrator} disabled={isSearching}>
-              {isSearching ? 'Buscando...' : 'Iniciar como Narrador'}
-            </Button>
-            <Button onClick={handleConnectPlayer} disabled={isSearching}>
-              {isSearching ? 'Buscando...' : 'Conectar como Jugador'}
+    <div className="min-h-screen py-8 px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto">
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-4xl font-medieval text-primary">
+              Dados del Aventurero
+            </h1>
+            <Button onClick={() => navigate('/campaigns')} className="font-medieval">
+              <Map className="h-4 w-4 mr-2" />
+              Campañas
             </Button>
           </div>
-        )}
 
-        {isBluetoothConnected && (
-          <Button onClick={handleDisconnect}>Desconectar</Button>
-        )}
+          <Tabs defaultValue="dice" className="space-y-4">
+            <TabsList className="w-full">
+              <TabsTrigger value="dice" className="w-1/3">
+                <Dices className="h-4 w-4 mr-2" />
+                Dados
+              </TabsTrigger>
+              <TabsTrigger value="characters" className="w-1/3">
+                <Users className="h-4 w-4 mr-2" />
+                Personajes
+              </TabsTrigger>
+              <TabsTrigger value="narrator" className="w-1/3">
+                <Crown className="h-4 w-4 mr-2" />
+                Narrador
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="dice" className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2 space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="font-medieval">Lanzar Dados</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Tabs defaultValue="single">
+                        <TabsList className="w-full">
+                          <TabsTrigger value="single" className="w-1/2">
+                            Dado Individual
+                          </TabsTrigger>
+                          <TabsTrigger value="multiple" className="w-1/2">
+                            Dados Múltiples
+                          </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="single" className="space-y-4">
+                          <DiceSelector
+                            selectedDice={selectedDice}
+                            onChange={setSelectedDice}
+                          />
+                          <DiceControls
+                            count={diceCount}
+                            setCount={setDiceCount}
+                            modifier={modifier}
+                            setModifier={setModifier}
+                            rollType={rollType}
+                            setRollType={setRollType}
+                            playerName={playerName}
+                            setPlayerName={setPlayerName}
+                            onRoll={handleRoll}
+                          />
+                        </TabsContent>
+
+                        <TabsContent value="multiple" className="space-y-4">
+                          <MultiDiceSelector
+                            selectedDiceCombination={diceCombination}
+                            onChange={setDiceCombination}
+                          />
+                          <Button 
+                            onClick={handleCombinedRoll}
+                            className="w-full font-medieval bg-accent text-black hover:bg-accent/90"
+                            disabled={diceCombination.length === 0}
+                          >
+                            ¡Lanzar Dados!
+                          </Button>
+                        </TabsContent>
+                      </Tabs>
+                    </CardContent>
+                  </Card>
+
+                  {rollHistory.length > 0 && rollHistory[0] && (
+                    <DiceResult roll={rollHistory[0]} />
+                  )}
+                </div>
+
+                <div>
+                  <RollHistory
+                    rolls={rollHistory}
+                    onReroll={handleReroll}
+                    onClearHistory={() => setRollHistory([])}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="characters">
+              <CharacterList onSelectCharacter={handleCharacterSelect} />
+            </TabsContent>
+
+            <TabsContent value="narrator" className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <NarratorPanel
+                  players={selectedCharacter ? [selectedCharacter] : []}
+                  onRollDice={(diceType, count, modifier) => {
+                    const roll = performDiceRoll(diceType as DiceType, count, modifier || 0, "normal", "Narrador");
+                    playSoundForRoll(roll);
+                    setRollHistory(prev => [roll, ...prev]);
+                  }}
+                />
+                <CombatRules />
+              </div>
+              
+              <Separator />
+              
+              <CombatTracker
+                players={selectedCharacter ? [selectedCharacter] : []}
+              />
+            </TabsContent>
+          </Tabs>
+        </motion.div>
       </div>
     </div>
   );
