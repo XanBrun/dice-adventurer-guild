@@ -144,7 +144,7 @@ const BluetoothStatus: React.FC<BluetoothStatusProps> = ({ onRoleChange }) => {
         variant="outline" 
         size="sm"
         onClick={handleConnectNarrator}
-        className="flex gap-1 items-center"
+        className="flex gap-1 items-center bg-accent text-black hover:bg-accent/90"
       >
         <Server className="h-4 w-4" />
         <span>Narrador</span>
@@ -154,7 +154,7 @@ const BluetoothStatus: React.FC<BluetoothStatusProps> = ({ onRoleChange }) => {
         variant="outline" 
         size="sm"
         onClick={handleConnectPlayer}
-        className="flex gap-1 items-center"
+        className="flex gap-1 items-center bg-accent text-black hover:bg-accent/90"
       >
         <UserRound className="h-4 w-4" />
         <span>Jugador</span>
