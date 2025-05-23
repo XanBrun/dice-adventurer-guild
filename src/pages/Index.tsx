@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,7 +23,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, CommandShortcut } from "@/components/ui/command"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Home } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -210,7 +209,7 @@ const Index = () => {
   const sendCombinedRoll = (combinedResults: CombinedRollResult) => {
     if (bluetoothManager.isConnected) {
       bluetoothManager.sendMessage({
-        type: 'ROLL',
+        type: 'ROLL',  // Changed from 'COMBINED_ROLL' to 'ROLL' which is a valid type
         playerId: 'player1',
         playerName: character ? character.name : 'Player',
         data: combinedResults
@@ -220,15 +219,7 @@ const Index = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <Button variant="home" size="sm" onClick={() => navigate("/")} asChild>
-          <Link to="/">
-            <Home className="mr-1" />
-            Volver al inicio
-          </Link>
-        </Button>
-      </div>
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
 
       {character ? (
         <div className="flex flex-col md:flex-row gap-4">
