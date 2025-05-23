@@ -10,7 +10,7 @@ export interface BluetoothDevice {
 }
 
 export interface BluetoothMessage {
-  type: 'ROLL' | 'CHARACTER' | 'ENEMY' | 'CHAT' | 'SYSTEM';
+  type: 'ROLL' | 'CHARACTER' | 'ENEMY' | 'CHAT' | 'SYSTEM' | 'COMBINED_ROLL';
   playerId: string;
   playerName: string;
   data: any;

@@ -58,7 +58,7 @@ export interface DiceRoll {
 }
 
 // Update HistoryRollType to include COMBINED_ROLL
-export type HistoryRollType = "ROLL" | "COMBINED_ROLL" | "CHARACTER" | "ENEMY" | "CHAT" | "SYSTEM";
+export type HistoryRollType = 'ROLL' | 'SKILL' | 'ATTACK' | 'DEFENSE' | 'DAMAGE' | 'COMBINED_ROLL';
 
 export interface RollHistoryItem {
   id: string;

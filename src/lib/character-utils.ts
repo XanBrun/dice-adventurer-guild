@@ -32,6 +32,7 @@ export interface Character {
   proficiencyBonus: number;
   skills: Record<string, boolean>; // Habilidades y si es proficiente
   avatarUrl?: string; // URL de la imagen del personaje (opcional)
+  description?: string; // Descripción del personaje (opcional)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -263,6 +264,27 @@ export const loadCharacters = (): Character[] => {
   } catch (error) {
     console.error('Error al cargar personajes:', error);
     return [];
+  }
+};
+
+// Obtener un personaje específico por ID o el primero si no se especifica ID
+export const getCharacter = (characterId?: string): Character | null => {
+  try {
+    const characters = loadCharacters();
+    
+    if (characterId) {
+      // Buscar por ID específico
+      const character = characters.find(c => c.id === characterId);
+      return character || null;
+    } else if (characters.length > 0) {
+      // Devolver el primer personaje si existe
+      return characters[0];
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error al obtener el personaje:', error);
+    return null;
   }
 };
 
