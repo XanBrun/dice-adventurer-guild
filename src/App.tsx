@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,7 +9,6 @@ import Campaigns from "./pages/Campaigns";
 import CampaignDetail from "./pages/CampaignDetail";
 import MapPage from "./pages/MapPage";
 import NotFound from "./pages/NotFound";
-import BluetoothStatus from "@/components/BluetoothStatus";
 
 const queryClient = new QueryClient();
 
@@ -18,15 +18,13 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
-          <BluetoothStatus />
-        </div>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/dashboard" element={<Index />} />
+          <Route path="/" element={<Campaigns />} />
           <Route path="/campaigns" element={<Campaigns />} />
           <Route path="/campaigns/:campaignId" element={<CampaignDetail />} />
           <Route path="/campaigns/:campaignId/maps" element={<MapPage />} />
-          <Route path="/dashboard" element={<Navigate to="/" replace />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
