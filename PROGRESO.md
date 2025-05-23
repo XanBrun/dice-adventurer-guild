@@ -1,7 +1,7 @@
 
 # 📊 Progreso del Proyecto - Dados del Aventurero Guild
 
-## 🚀 Versión Actual: 2.5.0
+## 🚀 Versión Actual: 2.0.0
 
 ### ✅ Funcionalidades Implementadas
 
@@ -22,61 +22,23 @@
 - [x] Conectividad Bluetooth entre jugadores
 - [x] Gestión de enemigos en tiempo real
 - [x] Sincronización de tiradas entre todos los jugadores
-- [x] Efectos visuales mejorados para críticos y fallos
-- [x] Soporte para audio y efectos de sonido temáticos
-- [x] Sistema de campañas y aventuras predefinidas
-- [x] Control de sonidos y efectos de audio para tiradas
-- [x] Integración de mapas interactivos
-- [x] Reglas expandidas de combate
-- [x] Sistema para compartir aplicación mediante QR
 
 ### 📋 Próximas Funcionalidades
 
+- [ ] Sistema de campañas y aventuras predefinidas
+- [ ] Integración de mapas interactivos
+- [ ] Guardado en la nube de personajes y campañas
 - [ ] Soporte para reglas de otros sistemas de juegos
+- [ ] Efectos visuales mejorados para críticos y fallos
 - [ ] Modo offline con IA para NPCs
+- [ ] Expansión de reglas especiales de combate
+- [ ] Creador de fichas de personaje personalizables
+- [ ] Compartir tiradas en redes sociales
+- [ ] Soporte para audio y efectos de sonido temáticos
 
 ## 📝 Registro de Cambios
 
-### Versión 2.5.0 (Actual)
-- Implementación completa de reglas expandidas de combate
-- Sistema detallado de acciones de combate (estándar, adicionales, reacciones)
-- Referencia de condiciones y estados especiales
-- Reglas de cobertura y variantes de iniciativa
-- Variantes para críticos y fallos críticos
-- Sistema de generación de códigos QR para compartir la aplicación
-- Información sobre uso offline de la aplicación
-- Instrucciones para añadir la aplicación a la pantalla de inicio
-
-### Versión 2.4.0
-- Implementación completa de mapas interactivos
-- Visualización de mapas para diferentes campañas
-- Sistema de marcadores en el mapa
-- Posibilidad de añadir y eliminar marcadores personalizados
-- Navegación y zoom en mapas interactivos
-- Persistencia de marcadores usando localStorage
-
-### Versión 2.3.0
-- Implementación completa del sistema de sonidos para dados
-- Adición de efectos de sonido para cada tipo de dado (d4, d6, d8, d10, d12, d20, d100)
-- Efectos de sonido especiales para críticos y pifias
-- Control para activar/desactivar sonidos
-- Botón para reproducir sonidos de tiradas pasadas
-- Persistencia de la preferencia de sonido usando localStorage
-
-### Versión 2.2.0
-- Implementación de sistema de efectos de sonido para dados
-- Control de sonido en la interfaz de usuario
-- Creación del sistema de campañas y aventuras predefinidas
-- Nuevas páginas para explorar y ver detalles de campañas
-- Integración de encuentros, objetivos y recompensas para aventuras
-
-### Versión 2.1.0
-- Implementación de efectos visuales mejorados para críticos y pifias
-- Componente CriticalEffects para animaciones especiales
-- Mejora visual en el historial de tiradas
-- Actualización de la interfaz de usuario para destacar resultados críticos
-
-### Versión 2.0.0
+### Versión 2.0.0 (Actual)
 - Implementación del sistema de conectividad Bluetooth
 - Creación del módulo de gestión de personajes
 - Desarrollo de la interfaz de Narrador/Master

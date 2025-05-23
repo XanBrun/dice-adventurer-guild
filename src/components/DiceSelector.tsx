@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { DiceType, DICE_SETS } from "@/lib/dice-utils";
+import { DiceSet, DiceType, DICE_SETS } from "@/lib/dice-utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DiceSelectorProps {
@@ -20,7 +20,7 @@ const DiceSelector: React.FC<DiceSelectorProps> = ({
       {DICE_SETS.map((dice) => (
         <Button
           key={dice.type}
-          onClick={() => onChange(dice.type as DiceType)}
+          onClick={() => onChange(dice.type)}
           variant={selectedDice === dice.type ? "default" : "outline"}
           className={`font-medieval relative ${
             selectedDice === dice.type ? "ring-2 ring-accent" : ""

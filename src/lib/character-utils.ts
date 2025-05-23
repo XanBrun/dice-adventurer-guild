@@ -31,8 +31,6 @@ export interface Character {
   initiative: number;
   proficiencyBonus: number;
   skills: Record<string, boolean>; // Habilidades y si es proficiente
-  avatarUrl?: string; // URL de la imagen del personaje (opcional)
-  description?: string; // Descripción del personaje (opcional)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,61 +49,10 @@ export const DEFAULT_SKILLS = [
   "stealth", "survival"
 ];
 
-export const SKILL_NAMES_SPANISH = {
-  "acrobatics": "Acrobacias",
-  "animalHandling": "Trato con Animales",
-  "arcana": "Arcano",
-  "athletics": "Atletismo",
-  "deception": "Engaño",
-  "history": "Historia",
-  "insight": "Perspicacia",
-  "intimidation": "Intimidación",
-  "investigation": "Investigación",
-  "medicine": "Medicina",
-  "nature": "Naturaleza",
-  "perception": "Percepción",
-  "performance": "Interpretación",
-  "persuasion": "Persuasión",
-  "religion": "Religión",
-  "sleightOfHand": "Juego de Manos",
-  "stealth": "Sigilo",
-  "survival": "Supervivencia"
-};
-
-export const SKILL_ABILITY_MAP = {
-  "acrobatics": "dexterity",
-  "animalHandling": "wisdom",
-  "arcana": "intelligence",
-  "athletics": "strength",
-  "deception": "charisma",
-  "history": "intelligence",
-  "insight": "wisdom",
-  "intimidation": "charisma",
-  "investigation": "intelligence",
-  "medicine": "wisdom",
-  "nature": "intelligence",
-  "perception": "wisdom",
-  "performance": "charisma",
-  "persuasion": "charisma",
-  "religion": "intelligence",
-  "sleightOfHand": "dexterity",
-  "stealth": "dexterity",
-  "survival": "wisdom"
-};
-
 export const ABILITY_NAMES = [
   "strength", "dexterity", "constitution", 
   "intelligence", "wisdom", "charisma"
 ];
-
-export const ABILITY_NAMES_SPANISH = {
-  "strength": "Fuerza",
-  "dexterity": "Destreza",
-  "constitution": "Constitución",
-  "intelligence": "Inteligencia",
-  "wisdom": "Sabiduría",
-  "charisma": "Carisma"
-};
 
 export const CHARACTER_RACES = [
   "Humano", "Elfo", "Enano", "Halfling", "Gnomo", 
@@ -125,45 +72,9 @@ export const ENEMY_TYPES = [
   "Planta", "Viscoso"
 ];
 
-// Lista de avatares predeterminados para personajes
-export const DEFAULT_AVATARS = [
-  "/avatars/warrior.png",
-  "/avatars/mage.png",
-  "/avatars/rogue.png",
-  "/avatars/cleric.png",
-  "/avatars/ranger.png",
-  "/avatars/bard.png",
-  "/avatars/default.png"
-];
-
 // Calcular el modificador según la puntuación de habilidad
 export const calculateModifier = (score: number): number => {
   return Math.floor((score - 10) / 2);
-};
-
-// Obtener un avatar predeterminado según la clase
-export const getDefaultAvatarByClass = (characterClass: string): string => {
-  switch (characterClass.toLowerCase()) {
-    case "guerrero":
-    case "bárbaro":
-    case "paladín":
-      return "/avatars/warrior.png";
-    case "mago":
-    case "hechicero":
-    case "brujo":
-      return "/avatars/mage.png";
-    case "pícaro":
-      return "/avatars/rogue.png";
-    case "clérigo":
-    case "druida":
-      return "/avatars/cleric.png";
-    case "explorador":
-      return "/avatars/ranger.png";
-    case "bardo":
-      return "/avatars/bard.png";
-    default:
-      return "/avatars/default.png";
-  }
 };
 
 // Crear un nuevo personaje con valores predeterminados
@@ -206,7 +117,6 @@ export const createDefaultCharacter = (name: string = "Nuevo Aventurero"): Chara
     initiative: modifiers.dexterity,
     proficiencyBonus: 2,
     skills,
-    avatarUrl: getDefaultAvatarByClass('Guerrero'),
     createdAt: new Date(),
     updatedAt: new Date()
   };
@@ -267,27 +177,6 @@ export const loadCharacters = (): Character[] => {
   }
 };
 
-// Obtener un personaje específico por ID o el primero si no se especifica ID
-export const getCharacter = (characterId?: string): Character | null => {
-  try {
-    const characters = loadCharacters();
-    
-    if (characterId) {
-      // Buscar por ID específico
-      const character = characters.find(c => c.id === characterId);
-      return character || null;
-    } else if (characters.length > 0) {
-      // Devolver el primer personaje si existe
-      return characters[0];
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Error al obtener el personaje:', error);
-    return null;
-  }
-};
-
 // Eliminar un personaje
 export const deleteCharacter = (characterId: string): void => {
   try {
@@ -297,16 +186,4 @@ export const deleteCharacter = (characterId: string): void => {
   } catch (error) {
     console.error('Error al eliminar el personaje:', error);
   }
-};
-
-// Calcular valor total de una habilidad (modificador de habilidad + proficiencia si aplica)
-export const calculateSkillValue = (
-  character: Character,
-  skillName: string
-): number => {
-  const ability = SKILL_ABILITY_MAP[skillName as keyof typeof SKILL_ABILITY_MAP];
-  const abilityMod = character.modifiers[ability as keyof typeof character.modifiers];
-  const isProficient = character.skills[skillName] || false;
-
-  return abilityMod + (isProficient ? character.proficiencyBonus : 0);
 };

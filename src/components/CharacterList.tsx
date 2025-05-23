@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Character, loadCharacters, deleteCharacter } from "@/lib/character-utils";
-import { Trash2, Pencil, Dice1 } from "lucide-react";
+import { Trash2Icon, PencilIcon, Dice1Icon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import CharacterCreation from "./CharacterCreation";
@@ -117,19 +116,8 @@ const CharacterList: React.FC<CharacterListProps> = ({ onSelectCharacter }) => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pb-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <img 
-                        src={character.avatarUrl || '/avatars/default.png'} 
-                        alt={character.name}
-                        className="w-12 h-12 rounded-full object-cover border border-accent"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/avatars/default.png';
-                        }}
-                      />
-                      <div>
-                        <span className="font-bold">{character.race}</span> • {character.class}
-                      </div>
+                    <div className="mb-3 text-sm">
+                      <span className="font-bold">{character.race}</span> • {character.class}
                     </div>
 
                     {/* Estadísticas principales */}
@@ -163,7 +151,7 @@ const CharacterList: React.FC<CharacterListProps> = ({ onSelectCharacter }) => {
                         size="sm"
                         onClick={() => handleEdit(character)}
                       >
-                        <Pencil className="h-4 w-4 mr-1" />
+                        <PencilIcon className="h-4 w-4 mr-1" />
                         Editar
                       </Button>
                       <Button
@@ -172,7 +160,7 @@ const CharacterList: React.FC<CharacterListProps> = ({ onSelectCharacter }) => {
                         className="bg-accent text-black hover:bg-accent/90"
                         onClick={() => handleSelect(character)}
                       >
-                        <Dice1 className="h-4 w-4 mr-1" />
+                        <Dice1Icon className="h-4 w-4 mr-1" />
                         Usar
                       </Button>
                       <Button
@@ -181,7 +169,7 @@ const CharacterList: React.FC<CharacterListProps> = ({ onSelectCharacter }) => {
                         className="text-red-500 hover:text-red-700 hover:bg-red-100"
                         onClick={() => handleDelete(character.id)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2Icon className="h-4 w-4" />
                       </Button>
                     </div>
                   </CardContent>

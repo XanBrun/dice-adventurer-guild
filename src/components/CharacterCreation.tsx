@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 import {
   Character,
@@ -16,11 +15,8 @@ import {
   ABILITY_NAMES,
   createDefaultCharacter,
   calculateModifier,
-  saveCharacter,
-  getDefaultAvatarByClass
+  saveCharacter
 } from "@/lib/character-utils";
-import CharacterAvatar from "./CharacterAvatar";
-import SkillSelector from "./SkillSelector";
 
 interface CharacterCreationProps {
   onSave?: (character: Character) => void;
@@ -39,7 +35,6 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({
   const { toast } = useToast();
   const [availablePoints, setAvailablePoints] = useState(27); // Sistema de puntos para habilidades
   const [initialTotal, setInitialTotal] = useState(0);
-  const [activeTab, setActiveTab] = useState("basics");
 
   // Calcular puntos iniciales si estamos editando
   useEffect(() => {
@@ -72,16 +67,7 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({
 
   // Actualizar raza o clase
   const handleSelectChange = (value: string, field: 'race' | 'class') => {
-    // Si cambia la clase, también actualizar el avatar predeterminado
-    if (field === 'class') {
-      setCharacter({ 
-        ...character, 
-        [field]: value,
-        avatarUrl: getDefaultAvatarByClass(value)
-      });
-    } else {
-      setCharacter({ ...character, [field]: value });
-    }
+    setCharacter({ ...character, [field]: value });
   };
 
   // Actualizar puntuación de habilidad
@@ -125,22 +111,6 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({
     }
   };
 
-  // Manejar cambio de avatar
-  const handleAvatarChange = (avatarUrl: string) => {
-    setCharacter({ ...character, avatarUrl });
-  };
-
-  // Manejar cambio de habilidades proficientes
-  const handleSkillChange = (skillName: string, isChecked: boolean) => {
-    setCharacter({
-      ...character,
-      skills: {
-        ...character.skills,
-        [skillName]: isChecked
-      }
-    });
-  };
-
   const handleSave = () => {
     try {
       // Actualizar fecha de modificación
@@ -178,211 +148,188 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="w-full max-w-4xl mx-auto border-2 border-accent bg-white/90 dark:bg-black/20 backdrop-blur-sm">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <Card className="w-full max-w-3xl mx-auto border-2 border-accent bg-white/90 dark:bg-black/20 backdrop-blur-sm">
+        <CardHeader>
           <CardTitle className="text-2xl font-medieval text-center">
             {initialCharacter ? "Editar Personaje" : "Crear Personaje"}
           </CardTitle>
-          <CharacterAvatar 
-            currentAvatar={character.avatarUrl}
-            onSelect={handleAvatarChange}
-          />
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-3 w-full mb-6">
-              <TabsTrigger value="basics" className="font-medieval">Básico</TabsTrigger>
-              <TabsTrigger value="abilities" className="font-medieval">Atributos</TabsTrigger>
-              <TabsTrigger value="skills" className="font-medieval">Habilidades</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="basics" className="space-y-4">
-              {/* Nombre y nivel */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nombre</Label>
-                  <Input
-                    id="name"
-                    value={character.name}
-                    onChange={(e) => handleChange(e, "name")}
-                    placeholder="Nombre del personaje"
-                    className="font-fantasy"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="level">Nivel</Label>
-                  <Input
-                    id="level"
-                    type="number"
-                    min="1"
-                    max="20"
-                    value={character.level}
-                    onChange={(e) => 
-                      setCharacter({
-                        ...character,
-                        level: parseInt(e.target.value) || 1,
-                        proficiencyBonus: Math.ceil((parseInt(e.target.value) || 1) / 4) + 1
-                      })
-                    }
-                    className="font-fantasy"
-                  />
-                </div>
-              </div>
+          {/* Nombre y nivel */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nombre</Label>
+              <Input
+                id="name"
+                value={character.name}
+                onChange={(e) => handleChange(e, "name")}
+                placeholder="Nombre del personaje"
+                className="font-fantasy"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="level">Nivel</Label>
+              <Input
+                id="level"
+                type="number"
+                min="1"
+                max="20"
+                value={character.level}
+                onChange={(e) => 
+                  setCharacter({
+                    ...character,
+                    level: parseInt(e.target.value) || 1,
+                    proficiencyBonus: Math.ceil((parseInt(e.target.value) || 1) / 4) + 1
+                  })
+                }
+                className="font-fantasy"
+              />
+            </div>
+          </div>
 
-              {/* Raza y clase */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Raza</Label>
-                  <Select 
-                    value={character.race} 
-                    onValueChange={(value) => handleSelectChange(value, 'race')}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una raza" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CHARACTER_RACES.map((race) => (
-                        <SelectItem key={race} value={race}>
-                          {race}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Clase</Label>
-                  <Select 
-                    value={character.class} 
-                    onValueChange={(value) => handleSelectChange(value, 'class')}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una clase" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CHARACTER_CLASSES.map((charClass) => (
-                        <SelectItem key={charClass} value={charClass}>
-                          {charClass}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+          {/* Raza y clase */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Raza</Label>
+              <Select 
+                value={character.race} 
+                onValueChange={(value) => handleSelectChange(value, 'race')}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona una raza" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CHARACTER_RACES.map((race) => (
+                    <SelectItem key={race} value={race}>
+                      {race}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Clase</Label>
+              <Select 
+                value={character.class} 
+                onValueChange={(value) => handleSelectChange(value, 'class')}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona una clase" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CHARACTER_CLASSES.map((charClass) => (
+                    <SelectItem key={charClass} value={charClass}>
+                      {charClass}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-              {/* Puntos de vida y CA */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="hitPoints">Puntos de vida</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="currentHP"
-                      type="number"
-                      value={character.hitPoints.current}
-                      onChange={(e) => 
-                        setCharacter({
-                          ...character,
-                          hitPoints: {
-                            ...character.hitPoints,
-                            current: parseInt(e.target.value) || 0
-                          }
-                        })
+          {/* Puntos de vida y CA */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="hitPoints">Puntos de vida</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="currentHP"
+                  type="number"
+                  value={character.hitPoints.current}
+                  onChange={(e) => 
+                    setCharacter({
+                      ...character,
+                      hitPoints: {
+                        ...character.hitPoints,
+                        current: parseInt(e.target.value) || 0
                       }
-                      className="font-fantasy w-1/2"
-                      placeholder="Actual"
-                    />
-                    <span className="flex items-center">/</span>
-                    <Input
-                      id="maxHP"
-                      type="number"
-                      value={character.hitPoints.max}
-                      onChange={(e) => 
-                        setCharacter({
-                          ...character,
-                          hitPoints: {
-                            ...character.hitPoints,
-                            max: parseInt(e.target.value) || 0,
-                            current: Math.min(character.hitPoints.current, parseInt(e.target.value) || 0)
-                          }
-                        })
+                    })
+                  }
+                  className="font-fantasy w-1/2"
+                  placeholder="Actual"
+                />
+                <span className="flex items-center">/</span>
+                <Input
+                  id="maxHP"
+                  type="number"
+                  value={character.hitPoints.max}
+                  onChange={(e) => 
+                    setCharacter({
+                      ...character,
+                      hitPoints: {
+                        ...character.hitPoints,
+                        max: parseInt(e.target.value) || 0,
+                        current: Math.min(character.hitPoints.current, parseInt(e.target.value) || 0)
                       }
-                      className="font-fantasy w-1/2"
-                      placeholder="Máximo"
+                    })
+                  }
+                  className="font-fantasy w-1/2"
+                  placeholder="Máximo"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="armorClass">Clase de Armadura</Label>
+              <Input
+                id="armorClass"
+                type="number"
+                min="0"
+                value={character.armorClass}
+                onChange={(e) => 
+                  setCharacter({
+                    ...character,
+                    armorClass: parseInt(e.target.value) || 10
+                  })
+                }
+                className="font-fantasy"
+              />
+            </div>
+          </div>
+
+          {/* Puntos disponibles */}
+          {!initialCharacter && (
+            <div className="bg-secondary/40 p-3 rounded-md text-center">
+              <span className="font-medieval">Puntos disponibles: </span>
+              <span className="font-bold">{availablePoints}</span>
+            </div>
+          )}
+
+          {/* Habilidades */}
+          <div className="space-y-4">
+            <h3 className="font-medieval text-lg">Habilidades</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {ABILITY_NAMES.map((ability) => {
+                const abilityKey = ability as keyof typeof character.abilities;
+                const modifierKey = ability as keyof typeof character.modifiers;
+                const value = character.abilities[abilityKey];
+                const modifier = character.modifiers[modifierKey];
+                const modifierText = modifier >= 0 ? `+${modifier}` : modifier;
+                
+                return (
+                  <div key={ability} className="bg-white/40 dark:bg-black/40 p-3 rounded-md shadow-sm">
+                    <div className="flex justify-between items-center mb-2">
+                      <Label htmlFor={ability} className="capitalize font-bold">
+                        {ability}
+                      </Label>
+                      <div className="text-lg font-medieval">
+                        {value} <span className="text-primary">({modifierText})</span>
+                      </div>
+                    </div>
+                    <Slider
+                      id={ability}
+                      min={8}
+                      max={15}
+                      step={1}
+                      value={[value]}
+                      onValueChange={(values) => handleAbilityChange(ability, values[0])}
+                      className="my-2"
                     />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="armorClass">Clase de Armadura</Label>
-                  <Input
-                    id="armorClass"
-                    type="number"
-                    min="0"
-                    value={character.armorClass}
-                    onChange={(e) => 
-                      setCharacter({
-                        ...character,
-                        armorClass: parseInt(e.target.value) || 10
-                      })
-                    }
-                    className="font-fantasy"
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="abilities">
-              {/* Puntos disponibles */}
-              {!initialCharacter && (
-                <div className="bg-secondary/40 p-3 rounded-md text-center mb-6">
-                  <span className="font-medieval">Puntos disponibles: </span>
-                  <span className="font-bold">{availablePoints}</span>
-                </div>
-              )}
-
-              {/* Habilidades */}
-              <div className="space-y-4">
-                <h3 className="font-medieval text-lg">Atributos</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {ABILITY_NAMES.map((ability) => {
-                    const abilityKey = ability as keyof typeof character.abilities;
-                    const modifierKey = ability as keyof typeof character.modifiers;
-                    const value = character.abilities[abilityKey];
-                    const modifier = character.modifiers[modifierKey];
-                    const modifierText = modifier >= 0 ? `+${modifier}` : modifier;
-                    
-                    return (
-                      <div key={ability} className="bg-white/40 dark:bg-black/40 p-3 rounded-md shadow-sm">
-                        <div className="flex justify-between items-center mb-2">
-                          <Label htmlFor={ability} className="capitalize font-bold">
-                            {ability}
-                          </Label>
-                          <div className="text-lg font-medieval">
-                            {value} <span className="text-primary">({modifierText})</span>
-                          </div>
-                        </div>
-                        <Slider
-                          id={ability}
-                          min={8}
-                          max={15}
-                          step={1}
-                          value={[value]}
-                          onValueChange={(values) => handleAbilityChange(ability, values[0])}
-                          className="my-2"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="skills">
-              <SkillSelector 
-                character={character}
-                onChange={handleSkillChange}
-              />
-            </TabsContent>
-          </Tabs>
+                );
+              })}
+            </div>
+          </div>
         </CardContent>
 
         <CardFooter className="flex justify-between">
