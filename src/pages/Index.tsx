@@ -1,271 +1,204 @@
-
-import React, { useState, useEffect } from "react";
-import { toast } from "@/components/ui/sonner";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Dices, Users, Crown, Map } from "lucide-react";
+import { motion } from "framer-motion";
 import DiceSelector from "@/components/DiceSelector";
 import DiceControls from "@/components/DiceControls";
-import RollHistory from "@/components/RollHistory";
 import DiceResult from "@/components/DiceResult";
+import RollHistory from "@/components/RollHistory";
+import MultiDiceSelector from "@/components/MultiDiceSelector";
 import CharacterList from "@/components/CharacterList";
 import NarratorPanel from "@/components/NarratorPanel";
-import BluetoothStatus from "@/components/BluetoothStatus";
-import { DiceType, DiceRoll, RollType, performDiceRoll } from "@/lib/dice-utils";
-import { Character } from "@/lib/character-utils";
-import { BluetoothRole, bluetoothManager } from "@/lib/bluetooth-utils";
-import { motion } from "framer-motion";
+import CombatRules from "@/components/CombatRules";
+import CombatTracker from "@/components/CombatTracker";
+import { useRollSounds } from "@/hooks/useRollSounds";
+import { Character, loadCharacters } from "@/lib/character-utils";
+import { DiceType, RollType, DiceCombination, performDiceRoll, performCombinedDiceRoll } from "@/lib/dice-utils";
 
 const Index = () => {
-  const [selectedDice, setSelectedDice] = useState<DiceType>("d20");
+  const navigate = useNavigate();
+  const [selectedDice, setSelectedDice] = useState<DiceType>('d20');
   const [diceCount, setDiceCount] = useState(1);
   const [modifier, setModifier] = useState(0);
   const [rollType, setRollType] = useState<RollType>("normal");
-  const [playerName, setPlayerName] = useState<string>("Aventurero");
-  const [currentRoll, setCurrentRoll] = useState<DiceRoll | null>(null);
-  const [rollHistory, setRollHistory] = useState<DiceRoll[]>([]);
-  const [isRolling, setIsRolling] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("dice");
-  const [bluetoothRole, setBluetoothRole] = useState<BluetoothRole>('none');
+  const [playerName, setPlayerName] = useState("Aventurero");
+  const [rollHistory, setRollHistory] = useState<any[]>([]);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const [diceCombination, setDiceCombination] = useState<DiceCombination[]>([]);
+  const { playSound, playSoundForRoll, isSoundEnabled, toggleSound } = useRollSounds();
 
-  // Cargar datos guardados
   useEffect(() => {
-    try {
-      const savedRolls = localStorage.getItem("diceRollHistory");
-      if (savedRolls) {
-        const parsedRolls = JSON.parse(savedRolls);
-        // Convertir string dates back to Date objects
-        const hydratedRolls = parsedRolls.map((roll: any) => ({
-          ...roll,
-          timestamp: new Date(roll.timestamp)
-        }));
-        setRollHistory(hydratedRolls);
-      }
-      
-      const savedName = localStorage.getItem("playerName");
-      if (savedName) {
-        setPlayerName(savedName);
-      }
-    } catch (error) {
-      console.error("Error loading saved rolls:", error);
+    const characters = loadCharacters();
+    if (characters.length > 0) {
+      setSelectedCharacter(characters[0]);
+      setPlayerName(characters[0].name);
     }
   }, []);
 
-  // Guardar tiradas cuando cambian
-  useEffect(() => {
-    try {
-      localStorage.setItem("diceRollHistory", JSON.stringify(rollHistory));
-    } catch (error) {
-      console.error("Error saving rolls:", error);
-    }
-  }, [rollHistory]);
+  const handleRoll = () => {
+    const roll = performDiceRoll(selectedDice, diceCount, modifier, rollType, playerName);
+    playSoundForRoll(roll);
+    setRollHistory(prev => [roll, ...prev]);
+  };
 
-  // Guardar nombre de jugador
-  useEffect(() => {
-    localStorage.setItem("playerName", playerName);
-  }, [playerName]);
+  const handleCombinedRoll = () => {
+    if (diceCombination.length === 0) return;
+    
+    const roll = performCombinedDiceRoll(diceCombination, modifier, rollType, playerName);
+    diceCombination.forEach(dice => playSound(dice.diceType));
+    setRollHistory(prev => [roll, ...prev]);
+  };
 
-  // Al seleccionar un personaje
-  useEffect(() => {
-    if (selectedCharacter) {
-      setPlayerName(selectedCharacter.name);
-      // Actualizar modificadores desde el personaje si es necesario
-    }
-  }, [selectedCharacter]);
-
-  const handleDiceRoll = () => {
-    try {
-      setIsRolling(true);
-      
-      // Reproducir efecto de sonido
-      const audio = new Audio('/dice-roll.mp3');
-      audio.volume = 0.6;
-      audio.play().catch(e => console.log("Audio play failed:", e));
-
-      setTimeout(() => {
-        // Calcular modificador según el personaje seleccionado si es necesario
-        let finalModifier = modifier;
-        
-        // Si tenemos un personaje seleccionado, podríamos ajustar el modificador
-        if (selectedCharacter && selectedDice === "d20") {
-          // Ejemplo: añadir el modificador de habilidad según el contexto
-          // finalModifier += selectedCharacter.modifiers.strength;
-        }
-
-        const roll = performDiceRoll(
-          selectedDice,
-          diceCount,
-          finalModifier,
-          rollType,
-          playerName || "Aventurero"
-        );
-        
-        setCurrentRoll(roll);
-        setRollHistory((prev) => [roll, ...prev]);
-        
-        // Mostrar notificaciones de crítico
-        if (selectedDice === "d20" && diceCount === 1) {
-          if (roll.results[0] === 20) {
-            toast.success("¡Crítico!", {
-              description: "¡Los dioses del dado sonríen sobre ti!",
-              duration: 3000,
-            });
-          } else if (roll.results[0] === 1) {
-            toast.error("¡Pifia!", {
-              description: "Los dioses del dado te han abandonado...",
-              duration: 3000,
-            });
-          }
-        }
-        
-        // Si está conectado por Bluetooth, enviar la tirada
-        if (bluetoothManager.isConnected) {
-          bluetoothManager.sendMessage({
-            type: 'ROLL',
-            playerId: 'local-player',
-            playerName: playerName,
-            data: { roll }
-          });
-        }
-        
-        setIsRolling(false);
-      }, 700);
-    } catch (error) {
-      console.error("Error rolling dice:", error);
-      toast.error("Error al tirar los dados", {
-        description: error instanceof Error ? error.message : "Error desconocido",
-      });
-      setIsRolling(false);
+  const handleReroll = (roll: any) => {
+    if ('diceType' in roll) {
+      // Single dice roll
+      const newRoll = performDiceRoll(roll.diceType, roll.count, roll.modifier, roll.rollType, roll.playerName);
+      playSoundForRoll(newRoll);
+      setRollHistory(prev => [newRoll, ...prev]);
+    } else {
+      // Combined roll
+      const newRoll = performCombinedDiceRoll(roll.dice, roll.modifier, roll.rollType, roll.playerName);
+      roll.dice.forEach((dice: DiceCombination) => playSound(dice.diceType));
+      setRollHistory(prev => [newRoll, ...prev]);
     }
   };
 
-  const handleReroll = (roll: DiceRoll) => {
-    setSelectedDice(roll.diceType);
-    setDiceCount(roll.count);
-    setModifier(roll.modifier);
-    setRollType(roll.rollType);
-    handleDiceRoll();
-  };
-
-  const handleClearHistory = () => {
-    setRollHistory([]);
-    setCurrentRoll(null);
-    localStorage.removeItem("diceRollHistory");
-    toast.info("Historial de tiradas borrado");
-  };
-
-  const handleBluetoothRoleChange = (role: BluetoothRole) => {
-    setBluetoothRole(role);
-    if (role === 'narrator') {
-      setActiveTab('narrator');
-    }
+  const handleCharacterSelect = (character: Character) => {
+    setSelectedCharacter(character);
+    setPlayerName(character.name);
   };
 
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         <motion.div
-          initial={{ y: -50, opacity: 0 }}
+          initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="mb-6 flex flex-col md:flex-row items-center justify-between gap-4"
+          transition={{ duration: 0.3 }}
         >
-          <h1 className="text-4xl md:text-5xl font-medieval text-center md:text-left text-primary">
-            Dados del Aventurero Guild
-          </h1>
-          <BluetoothStatus onRoleChange={handleBluetoothRoleChange} />
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-4xl font-medieval text-primary">
+              Dados del Aventurero
+            </h1>
+            <Button onClick={() => navigate('/campaigns')} className="font-medieval">
+              <Map className="h-4 w-4 mr-2" />
+              Campañas
+            </Button>
+          </div>
+
+          <Tabs defaultValue="dice" className="space-y-4">
+            <TabsList className="w-full">
+              <TabsTrigger value="dice" className="w-1/3">
+                <Dices className="h-4 w-4 mr-2" />
+                Dados
+              </TabsTrigger>
+              <TabsTrigger value="characters" className="w-1/3">
+                <Users className="h-4 w-4 mr-2" />
+                Personajes
+              </TabsTrigger>
+              <TabsTrigger value="narrator" className="w-1/3">
+                <Crown className="h-4 w-4 mr-2" />
+                Narrador
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="dice" className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2 space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="font-medieval">Lanzar Dados</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Tabs defaultValue="single">
+                        <TabsList className="w-full">
+                          <TabsTrigger value="single" className="w-1/2">
+                            Dado Individual
+                          </TabsTrigger>
+                          <TabsTrigger value="multiple" className="w-1/2">
+                            Dados Múltiples
+                          </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="single" className="space-y-4">
+                          <DiceSelector
+                            selectedDice={selectedDice}
+                            onChange={setSelectedDice}
+                          />
+                          <DiceControls
+                            count={diceCount}
+                            setCount={setDiceCount}
+                            modifier={modifier}
+                            setModifier={setModifier}
+                            rollType={rollType}
+                            setRollType={setRollType}
+                            playerName={playerName}
+                            setPlayerName={setPlayerName}
+                            onRoll={handleRoll}
+                          />
+                        </TabsContent>
+
+                        <TabsContent value="multiple" className="space-y-4">
+                          <MultiDiceSelector
+                            selectedDiceCombination={diceCombination}
+                            onChange={setDiceCombination}
+                          />
+                          <Button 
+                            onClick={handleCombinedRoll}
+                            className="w-full font-medieval bg-accent text-black hover:bg-accent/90"
+                            disabled={diceCombination.length === 0}
+                          >
+                            ¡Lanzar Dados!
+                          </Button>
+                        </TabsContent>
+                      </Tabs>
+                    </CardContent>
+                  </Card>
+
+                  {rollHistory.length > 0 && rollHistory[0] && (
+                    <DiceResult roll={rollHistory[0]} />
+                  )}
+                </div>
+
+                <div>
+                  <RollHistory
+                    rolls={rollHistory}
+                    onReroll={handleReroll}
+                    onClearHistory={() => setRollHistory([])}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="characters">
+              <CharacterList onSelectCharacter={handleCharacterSelect} />
+            </TabsContent>
+
+            <TabsContent value="narrator" className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <NarratorPanel
+                  players={selectedCharacter ? [selectedCharacter] : []}
+                  onRollDice={(diceType, count, modifier) => {
+                    const roll = performDiceRoll(diceType as DiceType, count, modifier || 0, "normal", "Narrador");
+                    playSoundForRoll(roll);
+                    setRollHistory(prev => [roll, ...prev]);
+                  }}
+                />
+                <CombatRules />
+              </div>
+              
+              <Separator />
+              
+              <CombatTracker
+                players={selectedCharacter ? [selectedCharacter] : []}
+              />
+            </TabsContent>
+          </Tabs>
         </motion.div>
-
-        <Tabs 
-          value={activeTab} 
-          onValueChange={setActiveTab}
-          className="w-full"
-        >
-          <TabsList className="grid grid-cols-3 w-full mb-6">
-            <TabsTrigger value="dice" className="font-medieval">Dados</TabsTrigger>
-            <TabsTrigger value="characters" className="font-medieval">Personajes</TabsTrigger>
-            <TabsTrigger value="narrator" className="font-medieval">Narrador</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="dice">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-2 space-y-6">
-                <Card className="border-2 border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
-                  <CardHeader>
-                    <CardTitle className="text-center font-medieval">Elige tus Dados</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <DiceSelector
-                      selectedDice={selectedDice}
-                      onChange={setSelectedDice}
-                    />
-
-                    <div className="mt-6">
-                      <DiceControls
-                        count={diceCount}
-                        setCount={setDiceCount}
-                        modifier={modifier}
-                        setModifier={setModifier}
-                        rollType={rollType}
-                        setRollType={setRollType}
-                        playerName={playerName}
-                        setPlayerName={setPlayerName}
-                        onRoll={handleDiceRoll}
-                      />
-                    </div>
-
-                    <motion.div 
-                      className="dice-container mt-6" 
-                      animate={{ rotate: isRolling ? [0, 15, -15, 10, -5, 0] : 0 }}
-                      transition={{ duration: 0.7 }}
-                    >
-                      {currentRoll && (
-                        <DiceResult roll={currentRoll} />
-                      )}
-                    </motion.div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="md:col-span-1">
-                <Card className="border-2 border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
-                  <CardHeader>
-                    <CardTitle className="font-medieval">Tus Tiradas</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <RollHistory
-                      rolls={rollHistory}
-                      onReroll={handleReroll}
-                      onClearHistory={handleClearHistory}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="characters">
-            <CharacterList onSelectCharacter={setSelectedCharacter} />
-          </TabsContent>
-          
-          <TabsContent value="narrator">
-            {bluetoothRole === 'narrator' ? (
-              <NarratorPanel />
-            ) : (
-              <Card className="border-2 border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
-                <CardContent className="p-8 text-center">
-                  <p className="text-xl font-medieval mb-4">
-                    Necesitas ser Narrador para acceder a este panel
-                  </p>
-                  <p className="mb-6">
-                    Para convertirte en Narrador, presiona el botón "Narrador" en las opciones de Bluetooth.
-                  </p>
-                  <BluetoothStatus onRoleChange={handleBluetoothRoleChange} />
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
       </div>
     </div>
   );

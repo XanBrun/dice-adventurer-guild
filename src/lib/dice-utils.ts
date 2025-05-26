@@ -1,9 +1,51 @@
+import { v4 as uuidv4 } from 'uuid';
 
 export type DiceType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100';
 
-export type RollType = 'normal' | 'advantage' | 'disadvantage';
+export const DICE_SETS = [
+  { type: 'd4', color: 'bg-red-500' },
+  { type: 'd6', color: 'bg-green-500' },
+  { type: 'd8', color: 'bg-blue-500' },
+  { type: 'd10', color: 'bg-yellow-500' },
+  { type: 'd12', color: 'bg-purple-500' },
+  { type: 'd20', color: 'bg-orange-500' },
+  { type: 'd100', color: 'bg-gray-500' },
+];
 
-export type DiceRoll = {
+// Generate a random ID for rolls
+export const generateRandomId = (): string => {
+  return uuidv4();
+};
+
+export const rollDie = (type: DiceType): number => {
+  switch (type) {
+    case 'd4': return Math.floor(Math.random() * 4) + 1;
+    case 'd6': return Math.floor(Math.random() * 6) + 1;
+    case 'd8': return Math.floor(Math.random() * 8) + 1;
+    case 'd10': return Math.floor(Math.random() * 10) + 1;
+    case 'd12': return Math.floor(Math.random() * 12) + 1;
+    case 'd20': return Math.floor(Math.random() * 20) + 1;
+    case 'd100': return Math.floor(Math.random() * 100) + 1;
+    default: return 0;
+  }
+};
+
+export interface RollResult {
+  id: string;
+  playerName: string;
+  diceType: DiceType;
+  value: number;
+  modifier: number;
+  total: number;
+  reason?: string;
+  timestamp: Date;
+}
+
+// Export RollType for DiceControls.tsx
+export type RollType = "normal" | "advantage" | "disadvantage";
+
+// Export DiceRoll interface for components
+export interface DiceRoll {
   id: string;
   diceType: DiceType;
   count: number;
@@ -13,67 +55,71 @@ export type DiceRoll = {
   total: number;
   timestamp: Date;
   playerName: string;
-};
+}
 
-export type DiceSet = {
-  type: DiceType;
-  sides: number;
-  color: string;
-  icon: string;
-};
+// Update HistoryRollType to include COMBINED_ROLL
+export type HistoryRollType = 'ROLL' | 'SKILL' | 'ATTACK' | 'DEFENSE' | 'DAMAGE' | 'COMBINED_ROLL';
 
-export const DICE_SETS: DiceSet[] = [
-  { type: 'd4', sides: 4, color: 'bg-blue-500', icon: '△' },
-  { type: 'd6', sides: 6, color: 'bg-red-500', icon: '⬦' },
-  { type: 'd8', sides: 8, color: 'bg-green-500', icon: '◇' },
-  { type: 'd10', sides: 10, color: 'bg-yellow-500', icon: '◇' },
-  { type: 'd12', sides: 12, color: 'bg-purple-500', icon: '⬠' },
-  { type: 'd20', sides: 20, color: 'bg-emerald-green', icon: '⬠' },
-  { type: 'd100', sides: 100, color: 'bg-dragon-red', icon: '⬠' },
-];
+export interface RollHistoryItem {
+  id: string;
+  characterName: string;
+  type: HistoryRollType;
+  roll: DiceRoll | CombinedDiceRoll;
+  timestamp: Date;
+}
 
-export const rollDice = (sides: number): number => {
-  return Math.floor(Math.random() * sides) + 1;
-};
+export interface DiceCombination {
+  diceType: DiceType;
+  count: number;
+}
+
+export interface CombinedDiceRoll {
+  id: string;
+  playerName: string;
+  dice: DiceCombination[];
+  results: {
+    diceType: DiceType;
+    values: number[];
+  }[];
+  modifier: number;
+  total: number;
+  rollType: RollType;
+  timestamp: Date;
+}
 
 export const performDiceRoll = (
   diceType: DiceType,
-  count: number,
-  modifier: number,
-  rollType: RollType,
-  playerName: string
+  count: number = 1,
+  modifier: number = 0,
+  rollType: RollType = "normal",
+  playerName: string = "Aventurero"
 ): DiceRoll => {
-  const diceSet = DICE_SETS.find((dice) => dice.type === diceType);
-  
-  if (!diceSet) {
-    throw new Error(`Invalid dice type: ${diceType}`);
-  }
-
   let results: number[] = [];
   
-  // Roll the dice
-  for (let i = 0; i < count; i++) {
-    results.push(rollDice(diceSet.sides));
-  }
-
-  // Handle advantage/disadvantage (roll an extra die and take highest/lowest)
-  if ((rollType === 'advantage' || rollType === 'disadvantage') && count === 1) {
-    const extraRoll = rollDice(diceSet.sides);
-    results.push(extraRoll);
-    
-    if (rollType === 'advantage') {
-      results = [Math.max(...results)];
-    } else {
-      results = [Math.min(...results)];
+  // Roll dice based on roll type
+  if (rollType === "advantage" && diceType === "d20") {
+    // Roll twice and take the higher value for advantage
+    const roll1 = rollDie(diceType);
+    const roll2 = rollDie(diceType);
+    results = [Math.max(roll1, roll2)];
+  } else if (rollType === "disadvantage" && diceType === "d20") {
+    // Roll twice and take the lower value for disadvantage
+    const roll1 = rollDie(diceType);
+    const roll2 = rollDie(diceType);
+    results = [Math.min(roll1, roll2)];
+  } else {
+    // Normal roll
+    for (let i = 0; i < count; i++) {
+      results.push(rollDie(diceType));
     }
   }
-
-  // Calculate the total
-  const diceSum = results.reduce((sum, result) => sum + result, 0);
-  const total = diceSum + modifier;
-
+  
+  // Calculate total
+  const diceTotal = results.reduce((sum, value) => sum + value, 0);
+  const total = diceTotal + modifier;
+  
   return {
-    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `roll-${generateRandomId()}`,
     diceType,
     count,
     modifier,
@@ -86,9 +132,139 @@ export const performDiceRoll = (
 };
 
 export const formatRollResult = (roll: DiceRoll): string => {
-  const modifierText = roll.modifier > 0 ? `+${roll.modifier}` : roll.modifier < 0 ? `${roll.modifier}` : '';
-  const diceText = `${roll.count}${roll.diceType}${modifierText}`;
-  const rollTypeText = roll.rollType !== 'normal' ? ` (${roll.rollType})` : '';
+  let result = '';
   
-  return `${roll.playerName} rolled ${diceText}${rollTypeText}: [${roll.results.join(', ')}]${modifierText} = ${roll.total}`;
+  if (roll.count === 1) {
+    result = `${roll.results[0]}`;
+  } else {
+    const resultStr = roll.results.join(' + ');
+    result = `${resultStr} = ${roll.results.reduce((a, b) => a + b, 0)}`;
+  }
+  
+  if (roll.modifier !== 0) {
+    result += roll.modifier > 0 ? ` + ${roll.modifier}` : ` - ${Math.abs(roll.modifier)}`;
+  }
+  
+  result += ` = ${roll.total}`;
+  
+  return result;
+};
+
+const generateRollId = (): string => {
+  return `roll-${generateRandomId()}`;
+};
+
+export const rollDice = (
+  diceType: DiceType,
+  count: number = 1,
+  modifier: number = 0,
+  playerName: string = "Jugador",
+  reason?: string
+): RollResult[] => {
+  const rolls: RollResult[] = [];
+  for (let i = 0; i < count; i++) {
+    const value = rollDie(diceType);
+    const total = value + modifier;
+    rolls.push({
+      id: generateRollId(),
+      playerName,
+      diceType,
+      value,
+      modifier,
+      total,
+      reason,
+      timestamp: new Date(),
+    });
+  }
+  return rolls;
+};
+
+export const performCombinedDiceRoll = (
+  diceCombinations: DiceCombination[],
+  modifier: number = 0,
+  rollType: RollType = "normal",
+  playerName: string = "Jugador"
+): CombinedDiceRoll => {
+  const results = diceCombinations.map(combination => {
+    const values = Array.from({ length: combination.count }, () => 
+      rollDie(combination.diceType)
+    );
+    
+    return {
+      diceType: combination.diceType,
+      values
+    };
+  });
+  
+  const diceTotal = results.reduce((total, result) => {
+    return total + result.values.reduce((sum, value) => sum + value, 0);
+  }, 0);
+  
+  const total = diceTotal + modifier;
+  
+  return {
+    id: generateRollId(),
+    playerName,
+    dice: diceCombinations,
+    results,
+    modifier,
+    rollType,
+    total,
+    timestamp: new Date()
+  };
+};
+
+export const formatCombinedRollResult = (roll: CombinedDiceRoll): string => {
+  let resultParts: string[] = [];
+  
+  roll.results.forEach(diceResult => {
+    if (diceResult.values.length > 0) {
+      const diceStr = `${diceResult.values.join(' + ')} [${diceResult.diceType}]`;
+      resultParts.push(diceStr);
+    }
+  });
+  
+  let result = resultParts.join(' + ');
+  
+  if (roll.modifier !== 0) {
+    result += roll.modifier > 0 ? ` + ${roll.modifier}` : ` - ${Math.abs(roll.modifier)}`;
+  }
+  
+  result += ` = ${roll.total}`;
+  
+  return result;
+};
+
+export const rollCombinedDice = (
+  diceCombinations: DiceCombination[],
+  modifier: number = 0,
+  playerName: string = "Jugador"
+): CombinedDiceRoll => {
+  const results = diceCombinations.map(combination => {
+    const values = Array.from({ length: combination.count }, () => 
+      rollDie(combination.diceType)
+    );
+    
+    return {
+      diceType: combination.diceType,
+      values
+    };
+  });
+  
+  const diceTotal = results.reduce((total, result) => {
+    return total + result.values.reduce((sum, value) => sum + value, 0);
+  }, 0);
+  
+  const total = diceTotal + modifier;
+  
+  return {
+    id: generateRollId(),
+    playerName,
+    dice: diceCombinations,
+    results,
+    modifier,
+    rollType: "normal",
+    total,
+    timestamp: new Date()
+  };
 };

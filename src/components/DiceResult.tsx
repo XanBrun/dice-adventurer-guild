@@ -1,52 +1,110 @@
 
-import React from "react";
-import { DiceRoll } from "@/lib/dice-utils";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import React from 'react';
+import { DiceRoll, formatRollResult } from "@/lib/dice-utils";
 import { motion } from "framer-motion";
+import CriticalEffects from '@/components/CriticalEffects';
+import { cn } from '@/lib/utils';
 
 interface DiceResultProps {
-  roll: DiceRoll | null;
+  roll: DiceRoll;
 }
 
 const DiceResult: React.FC<DiceResultProps> = ({ roll }) => {
-  if (!roll) return null;
-
-  const modifierText = roll.modifier > 0 ? `+${roll.modifier}` : roll.modifier < 0 ? `${roll.modifier}` : '';
-  const diceText = `${roll.count}${roll.diceType}${modifierText}`;
-  const rollTypeText = roll.rollType !== 'normal' ? ` with ${roll.rollType}` : '';
+  const { diceType, count, results, total, timestamp } = roll;
+  const isCriticalRoll = diceType === 'd20' && count === 1;
+  const isCriticalSuccess = isCriticalRoll && results[0] === 20;
+  const isCriticalFailure = isCriticalRoll && results[0] === 1;
+  
+  const formatTime = (date: Date) => {
+    return new Intl.DateTimeFormat('es', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      second: '2-digit'
+    }).format(date);
+  };
 
   return (
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: "spring", duration: 0.5 }}
-    >
-      <Alert className="bg-card border-2 border-accent">
-        <AlertTitle className="text-2xl font-medieval">
-          {roll.playerName} rolled {diceText}{rollTypeText}
-        </AlertTitle>
-        <AlertDescription className="flex flex-col items-center mt-2 space-y-2">
-          <div className="flex flex-wrap justify-center gap-2">
-            {roll.results.map((result, index) => (
-              <div
-                key={index}
-                className="w-12 h-12 flex items-center justify-center text-xl font-bold bg-accent rounded-md shiny-gold"
-              >
-                {result}
-              </div>
-            ))}
-          </div>
-          
-          {roll.modifier !== 0 && (
-            <div className="text-lg font-fantasy">
-              {roll.results.join(' + ')} {modifierText} = {roll.total}
-            </div>
+    <div className="relative">
+      <motion.div 
+        className={cn(
+          "rounded-lg bg-white/90 dark:bg-black/80 p-6 shadow-lg border-2 relative overflow-hidden",
+          isCriticalSuccess ? "border-yellow-400" : 
+          isCriticalFailure ? "border-red-600" : 
+          "border-gray-200"
+        )}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <CriticalEffects isCritical={isCriticalSuccess} isFail={isCriticalFailure} />
+        
+        <div className="mb-4 flex justify-between items-center">
+          <h3 className="font-medieval text-xl">
+            {count}
+            <span className="text-primary">{diceType}</span>
+            {roll.modifier !== 0 && (
+              <span className="text-muted-foreground">
+                {roll.modifier > 0 ? ` +${roll.modifier}` : ` ${roll.modifier}`}
+              </span>
+            )}
+          </h3>
+          <span className="text-sm text-muted-foreground">
+            {formatTime(timestamp)}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-4 justify-center">
+          {results.map((result, index) => (
+            <motion.div
+              key={index}
+              className={cn(
+                "dice-result w-10 h-10 flex items-center justify-center rounded-md text-white font-bold shadow-md",
+                diceType === 'd20' && result === 20 ? "bg-yellow-500" : 
+                diceType === 'd20' && result === 1 ? "bg-red-600" : 
+                "bg-primary"
+              )}
+              initial={{ scale: 0, rotate: -10 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ 
+                type: "spring", 
+                stiffness: 260, 
+                damping: 20,
+                delay: index * 0.1
+              }}
+            >
+              {result}
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.div 
+          className={cn(
+            "text-center text-3xl font-medieval",
+            isCriticalSuccess ? "text-yellow-600" : 
+            isCriticalFailure ? "text-red-600" : 
+            "text-primary"
           )}
-          
-          <div className="text-3xl font-bold font-medieval mt-2">{roll.total}</div>
-        </AlertDescription>
-      </Alert>
-    </motion.div>
+          initial={{ scale: 0.8 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 200 }}
+        >
+          {formatRollResult(roll)}
+        </motion.div>
+        
+        {roll.rollType !== "normal" && (
+          <div className="text-center text-xs mt-2 text-muted-foreground">
+            {roll.rollType === "advantage" ? "Con ventaja" : "Con desventaja"}
+          </div>
+        )}
+        
+        {roll.playerName && (
+          <div className="mt-4 text-center text-sm">
+            <span className="text-muted-foreground">Tirado por </span>
+            <span className="font-medieval">{roll.playerName}</span>
+          </div>
+        )}
+      </motion.div>
+    </div>
   );
 };
 
