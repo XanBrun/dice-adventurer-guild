@@ -15,6 +15,7 @@ import CharacterList from "@/components/CharacterList";
 import NarratorPanel from "@/components/NarratorPanel";
 import CombatRules from "@/components/CombatRules";
 import CombatTracker from "@/components/CombatTracker";
+import BluetoothStatus from "@/components/BluetoothStatus";
 import { useRollSounds } from "@/hooks/useRollSounds";
 import { Character, loadCharacters } from "@/lib/character-utils";
 import { DiceType, RollType, DiceCombination, performDiceRoll, performCombinedDiceRoll } from "@/lib/dice-utils";
@@ -80,14 +81,17 @@ const Index = () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <h1 className="text-4xl font-medieval text-primary">
               Dados del Aventurero
             </h1>
-            <Button onClick={() => navigate('/campaigns')} className="font-medieval">
-              <Map className="h-4 w-4 mr-2" />
-              Campañas
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+              <BluetoothStatus />
+              <Button onClick={() => navigate('/campaigns')} className="font-medieval">
+                <Map className="h-4 w-4 mr-2" />
+                Campañas
+              </Button>
+            </div>
           </div>
 
           <Tabs defaultValue="dice" className="space-y-4">

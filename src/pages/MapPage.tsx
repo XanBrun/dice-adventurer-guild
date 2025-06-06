@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { getCampaignById } from "@/lib/campaign-utils";
 import { MapData, MapMarker, getMapsByCampaignId, generateRandomMarkers } from "@/lib/map-utils";
 import Map from "@/components/Map";
 import { toast } from "@/components/ui/sonner";
+import BluetoothStatus from "@/components/BluetoothStatus";
 
 const MapPage = () => {
   const { campaignId } = useParams();
@@ -90,13 +90,15 @@ const MapPage = () => {
     return (
       <div className="min-h-screen py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/campaigns')}
-            className="mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Volver a campañas
-          </Button>
+          <div className="flex justify-between items-center mb-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/campaigns')}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" /> Volver a campañas
+            </Button>
+            <BluetoothStatus />
+          </div>
           
           <Card className="border-2 border-accent bg-white/70 dark:bg-black/20 backdrop-blur-sm">
             <CardContent className="p-10 text-center">
@@ -125,13 +127,15 @@ const MapPage = () => {
         >
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate(`/campaigns/${campaignId}`)}
-                className="mb-2"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" /> Volver a la campaña
-              </Button>
+              <div className="flex justify-between items-center mb-2">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate(`/campaigns/${campaignId}`)}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Volver a la campaña
+                </Button>
+                <BluetoothStatus />
+              </div>
               <h1 className="text-3xl md:text-4xl font-medieval text-primary">
                 Mapas interactivos
               </h1>

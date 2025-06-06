@@ -8,7 +8,6 @@ import Campaigns from "./pages/Campaigns";
 import CampaignDetail from "./pages/CampaignDetail";
 import MapPage from "./pages/MapPage";
 import NotFound from "./pages/NotFound";
-import BluetoothStatus from "@/components/BluetoothStatus";
 
 const queryClient = new QueryClient();
 
@@ -18,9 +17,6 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <div className="fixed top-4 right-4 z-50">
-          <BluetoothStatus />
-        </div>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/campaigns" element={<Campaigns />} />

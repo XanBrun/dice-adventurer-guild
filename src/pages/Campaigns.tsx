@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/sonner";
 import { useRollSounds } from "@/hooks/useRollSounds";
+import BluetoothStatus from "@/components/BluetoothStatus";
 
 const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
   const navigate = useNavigate();
@@ -117,6 +117,8 @@ const Campaigns = () => {
             >
               <Home className="h-4 w-4" /> Volver al inicio
             </Button>
+            
+            <BluetoothStatus />
           </div>
           
           <div className="flex items-center space-x-3">

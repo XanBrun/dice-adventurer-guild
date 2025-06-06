@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRollSounds } from "@/hooks/useRollSounds";
 import { toast } from "@/components/ui/sonner";
+import BluetoothStatus from "@/components/BluetoothStatus";
 
 const CampaignDetail = () => {
   const { campaignId } = useParams();
@@ -80,13 +80,16 @@ const CampaignDetail = () => {
               <ArrowLeft className="mr-2 h-4 w-4" /> Volver a campañas
             </Button>
             
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/')}
-              className="gap-2"
-            >
-              <Home className="h-4 w-4" /> Volver al inicio
-            </Button>
+            <div className="flex gap-2 items-center">
+              <BluetoothStatus />
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/')}
+                className="gap-2"
+              >
+                <Home className="h-4 w-4" /> Volver al inicio
+              </Button>
+            </div>
           </div>
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
