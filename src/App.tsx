@@ -22,7 +22,7 @@ const App = () => (
           <Route path="/campaigns" element={<Campaigns />} />
           <Route path="/campaigns/:campaignId" element={<CampaignDetail />} />
           <Route path="/campaigns/:campaignId/maps" element={<MapPage />} />
-          <Route path="/dashboard" element={<Navigate to="/" replace />} />
+          <Route path="/dashboard" element={<Navigate to="/\" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
